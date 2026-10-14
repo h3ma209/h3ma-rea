@@ -275,6 +275,16 @@ not launch the target or write the session database.
 encodings. Application is off until `--apply` is set. Unsupported encodings
 are invalid and are not written.
 
+`inspect_objc_selector_refs` lists static sites that reference a decoded
+selector address or matching program string. It does not prove runtime dispatch.
+
+`apply_objc_ivars` plans Ghidra structures from decoded class ivar layouts.
+Application is off until `--apply` is set. Each class uses one resolved method
+procedure as the structure anchor.
+
+`trace_native_values_in_region` runs the static value trace inside one
+decompiler region address range from `inspect_native_regions`.
+
 Jump-table evidence keeps numeric `mappings`, explicit `default_targets`, and
 backing `data_sources` separate. A null case value denotes an unresolved
 case, never a known default. Ghidra pairs typed case/default tokens with the

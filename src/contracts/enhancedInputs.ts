@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { nativeValueTraceInputSchema } from "../domain/native/nativeValueTrace.js";
+import { nativeValueTraceInRegionInputSchema } from "../domain/native/nativeValueTraceRegion.js";
 const traceLiteralInputSchema = z.strictObject({
   query: z.string().min(1),
   case_sensitive: z.boolean().default(false),
@@ -39,6 +40,20 @@ export const enhancedInputSchemas = {
     max_sites: z.number().int().min(1).max(4096).default(256),
     max_records: z.number().int().min(1).max(20_000).default(5_000),
   }),
+  inspect_objc_selector_refs: z.strictObject({
+    class_name: z.string().min(1).optional(),
+    selector: z.string().min(1).optional(),
+    max_selectors: z.number().int().min(1).max(5_000).default(256),
+    max_refs: z.number().int().min(1).max(20_000).default(2_000),
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+  }),
+  apply_objc_ivars: z.strictObject({
+    apply: z.boolean().default(false),
+    class_name: z.string().min(1).optional(),
+    max_classes: z.number().int().min(1).max(2_000).default(200),
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+  }),
+  trace_native_values_in_region: nativeValueTraceInRegionInputSchema,
   get_objc_classes: z.strictObject({ pattern: z.string().default("") }),
   get_objc_protocols: z.strictObject({}),
   batch_decompile: z.strictObject({

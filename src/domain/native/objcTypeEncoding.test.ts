@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { objcEncodingToSignature } from "./objcTypeEncoding.js";
+import { objcEncodingToCType, objcEncodingToSignature } from "./objcTypeEncoding.js";
 
 describe("objcEncodingToSignature", () => {
   it("translates a void instance method", () => {
@@ -13,6 +13,12 @@ describe("objcEncodingToSignature", () => {
     expect(objcEncodingToSignature("i32@0:8*16@24", "set:value:")).toBe(
       "int set_value_(void * self, void * cmd, char * arg2, void * arg3)",
     );
+  });
+
+  it("translates single ivar type encodings", () => {
+    expect(objcEncodingToCType("@")).toBe("void *");
+    expect(objcEncodingToCType("q")).toBe("long long");
+    expect(objcEncodingToCType("{CGRect=ffff}")).toBeNull();
   });
 
   it("rejects struct and unknown encodings", () => {

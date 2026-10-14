@@ -117,6 +117,22 @@ const ENHANCED_REQUIREMENTS: Readonly<Record<string, readonly string[]>> = {
     "annotate_native_function",
   ],
   resolve_function_calls: ["analyze_function", "resolve_native_call_targets"],
+  inspect_objc_selector_refs: [
+    "inspect_native_dispatch_metadata",
+    "xrefs",
+    "resolve_containing_procedure",
+    "list_strings",
+  ],
+  apply_objc_ivars: [
+    "inspect_native_dispatch_metadata",
+    "inspect_native_dispatch_implementations",
+    "annotate_native_function",
+  ],
+  trace_native_values_in_region: [
+    "inspect_native_regions",
+    "analyze_function",
+    "resolve_native_call_targets",
+  ],
   get_objc_classes: ["list_names"],
   get_objc_protocols: ["list_names"],
   batch_decompile: ["procedure_pseudo_code"],

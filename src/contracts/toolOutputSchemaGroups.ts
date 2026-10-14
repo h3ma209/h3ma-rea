@@ -15,6 +15,9 @@ import { nativeMemorySearchSchema } from "../domain/native/nativeMemorySearch.js
 import { nativeDispatchImplementationMapSchema } from "../domain/native/nativeDispatchImplementationMap.js";
 import { applyDemangledNamesSchema } from "../domain/native/demangledNames.js";
 import { applyObjcSignaturesSchema } from "../domain/native/objcSignatures.js";
+import { applyObjcIvarsSchema } from "../domain/native/objcIvarApply.js";
+import { inspectObjcSelectorRefsSchema } from "../domain/native/objcSelectorRefs.js";
+import { nativeValueTraceInRegionSchema } from "../domain/native/nativeValueTraceRegion.js";
 import { functionCallResolutionSchema } from "../domain/native/functionCallResolution.js";
 import { nativeControlRegionsSchema } from "../domain/native/nativeControlRegions.js";
 import { nativePcodeEvaluationSchema } from "../domain/native/nativePcodeEvaluation.js";
@@ -293,6 +296,9 @@ export const enhancedOutputSchemas: Readonly<Record<string, z.ZodObject>> = {
   ),
   apply_demangled_names: evidenceResultOf(applyDemangledNamesSchema),
   apply_objc_signatures: evidenceResultOf(applyObjcSignaturesSchema),
+  apply_objc_ivars: evidenceResultOf(applyObjcIvarsSchema),
+  inspect_objc_selector_refs: evidenceResultOf(inspectObjcSelectorRefsSchema),
+  trace_native_values_in_region: evidenceResultOf(nativeValueTraceInRegionSchema),
   resolve_function_calls: evidenceResultOf(functionCallResolutionSchema),
   trace_native_values: evidenceResultOf(nativeValueTraceSchema),
   trace_native_ui_action: evidenceResultOf(nativeInvestigationTraceSchema),

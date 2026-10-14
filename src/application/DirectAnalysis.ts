@@ -73,6 +73,9 @@ type DirectAnalysisTool =
   | "apply_demangled_names"
   | "apply_objc_signatures"
   | "resolve_function_calls"
+  | "inspect_objc_selector_refs"
+  | "apply_objc_ivars"
+  | "trace_native_values_in_region"
   | "inspect_native_regions"
   | "evaluate_native_pcode"
   | "search_native_memory"
@@ -400,6 +403,9 @@ const executeAnalysisTool = async (input: {
     tool === "apply_demangled_names" ||
     tool === "apply_objc_signatures" ||
     tool === "resolve_function_calls" ||
+    tool === "inspect_objc_selector_refs" ||
+    tool === "apply_objc_ivars" ||
+    tool === "trace_native_values_in_region" ||
     tool === "trace_feature" ||
     tool === "trace_native_values" ||
     tool === "trace_native_ui_action"
@@ -600,6 +606,9 @@ const isWorkflowEvidenceTool = (
   tool === "apply_demangled_names" ||
   tool === "apply_objc_signatures" ||
   tool === "resolve_function_calls" ||
+  tool === "inspect_objc_selector_refs" ||
+  tool === "apply_objc_ivars" ||
+  tool === "trace_native_values_in_region" ||
   tool === "trace_feature" ||
   tool === "trace_native_values" ||
   tool === "trace_native_ui_action";

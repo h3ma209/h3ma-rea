@@ -66,6 +66,15 @@ const cIdentifier = (selector: string): string | null => {
   return /^[A-Za-z_][A-Za-z0-9_]*$/u.test(name) ? name : null;
 };
 
+/** Translate one Objective-C type encoding fragment into a Ghidra C type name. */
+export const objcEncodingToCType = (encoding: string): string | null => {
+  if (encoding.length === 0) return null;
+  const decoded = readType(encoding, 0);
+  if (decoded === null || decoded.isVoid) return null;
+  const next = skipDigits(encoding, decoded.next);
+  return next === encoding.length ? decoded.cType : null;
+};
+
 /**
  * Translate one Objective-C method type encoding into a Ghidra C signature.
  * Unsupported encodings return null and must not be applied.

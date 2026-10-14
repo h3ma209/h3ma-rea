@@ -34,8 +34,11 @@ import { inspectNativeDispatch } from "./native/NativeDispatchMetadataInspection
 import { inspectNativeDispatchImplementations } from "./native/NativeDispatchImplementationMap.js";
 import { applyDemangledNames } from "./native/ApplyDemangledNames.js";
 import { applyObjcSignatures } from "./native/ApplyObjcSignatures.js";
+import { applyObjcIvars } from "./native/ApplyObjcIvars.js";
+import { inspectObjcSelectorRefs } from "./native/InspectObjcSelectorRefs.js";
 import { resolveFunctionCalls } from "./native/ResolveFunctionCalls.js";
 import { traceNativeValues } from "./native/NativeValueTrace.js";
+import { traceNativeValuesInRegion } from "./native/TraceNativeValuesInRegion.js";
 import { traceNativeUiAction } from "./native/NativeUiActionTrace.js";
 import { jsonValueSchema, type JsonValue } from "../domain/jsonValue.js";
 import { compareUnicodeCodePoints } from "../domain/unicodeCodePointOrder.js";
@@ -122,6 +125,26 @@ export class EnhancedTools {
           ? this.executeValidated({ name, input: parsed.data }, signal)
           : invalidEnhancedInput(name, parsed.error);
       }
+      case "inspect_objc_selector_refs": {
+        const parsed =
+          enhancedInputSchemas.inspect_objc_selector_refs.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "apply_objc_ivars": {
+        const parsed = enhancedInputSchemas.apply_objc_ivars.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "trace_native_values_in_region": {
+        const parsed =
+          enhancedInputSchemas.trace_native_values_in_region.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
       case "get_objc_classes": {
         const parsed = enhancedInputSchemas.get_objc_classes.safeParse(input);
         return parsed.success
@@ -187,6 +210,12 @@ export class EnhancedTools {
         return applyObjcSignatures(this.analysis, call.input, signal);
       case "resolve_function_calls":
         return resolveFunctionCalls(this.analysis, call.input, signal);
+      case "inspect_objc_selector_refs":
+        return inspectObjcSelectorRefs(this.analysis, call.input, signal);
+      case "apply_objc_ivars":
+        return applyObjcIvars(this.analysis, call.input, signal);
+      case "trace_native_values_in_region":
+        return traceNativeValuesInRegion(this.analysis, call.input, signal);
       case "get_objc_classes":
         return this.#objcClasses(call.input.pattern, signal);
       case "get_objc_protocols":

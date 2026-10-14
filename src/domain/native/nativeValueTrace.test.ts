@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { sliceNativeValueGraph } from "./nativeValueTrace.js";
+import {
+  filterNativeValueGraphByRange,
+  sliceNativeValueGraph,
+} from "./nativeValueTrace.js";
 
 const operation = (id: string, address: string) => ({
   id,
@@ -31,5 +34,28 @@ describe("sliceNativeValueGraph", () => {
     expect(sliceNativeValueGraph(nodes, edges, "0x1", "forward").matched).toBe(
       false,
     );
+  });
+});
+
+describe("filterNativeValueGraphByRange", () => {
+  it("keeps only operations inside the closed range and linked parameters", () => {
+    const nodes = [
+      { id: "a", kind: "operation" as const, operation: { address: "0x1000" } },
+      { id: "b", kind: "operation" as const, operation: { address: "0x1004" } },
+      { id: "c", kind: "operation" as const, operation: { address: "0x1010" } },
+      { id: "p", kind: "parameter" as const, operation: null },
+    ];
+    const edges = [
+      { source: "p", target: "b" },
+      { source: "b", target: "c" },
+    ];
+    const filtered = filterNativeValueGraphByRange(
+      nodes,
+      edges,
+      "0x1004",
+      "0x1008",
+    );
+    expect(filtered.nodes.map((node) => node.id).sort()).toEqual(["b", "p"]);
+    expect(filtered.edges).toEqual([{ source: "p", target: "b" }]);
   });
 });

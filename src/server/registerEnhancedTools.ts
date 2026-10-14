@@ -66,6 +66,11 @@ export const registerEnhancedTools = (
   const applyDemangledNames = toolContract("apply_demangled_names");
   const applyObjcSignatures = toolContract("apply_objc_signatures");
   const resolveFunctionCalls = toolContract("resolve_function_calls");
+  const inspectObjcSelectorRefs = toolContract("inspect_objc_selector_refs");
+  const applyObjcIvars = toolContract("apply_objc_ivars");
+  const traceNativeValuesInRegion = toolContract(
+    "trace_native_values_in_region",
+  );
   const objcClasses = toolContract("get_objc_classes");
   const objcProtocols = toolContract("get_objc_protocols");
   const batchDecompile = toolContract("batch_decompile");
@@ -133,6 +138,33 @@ export const registerEnhancedTools = (
     (input, context) =>
       executeEnhancedTool(registration, resolveFunctionCalls, {
         validatedCall: { name: "resolve_function_calls", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    inspectObjcSelectorRefs.name,
+    toolRegistrationOptions(inspectObjcSelectorRefs),
+    (input, context) =>
+      executeEnhancedTool(registration, inspectObjcSelectorRefs, {
+        validatedCall: { name: "inspect_objc_selector_refs", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    applyObjcIvars.name,
+    toolRegistrationOptions(applyObjcIvars),
+    (input, context) =>
+      executeEnhancedTool(registration, applyObjcIvars, {
+        validatedCall: { name: "apply_objc_ivars", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    traceNativeValuesInRegion.name,
+    toolRegistrationOptions(traceNativeValuesInRegion),
+    (input, context) =>
+      executeEnhancedTool(registration, traceNativeValuesInRegion, {
+        validatedCall: { name: "trace_native_values_in_region", input },
         context,
       }),
   );

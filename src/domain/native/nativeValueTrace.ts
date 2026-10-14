@@ -80,10 +80,79 @@ export const nativeValueTraceSchema = z.strictObject({
   limitations: z.array(z.string()),
 });
 
-const normalizeTraceAddress = (value: string): string =>
+export const normalizeTraceAddress = (value: string): string =>
   value.trim().toLowerCase().replace(/^0x/u, "");
 
 /** Keep the forward uses or backward definitions of one interior address. */
+export const compareTraceAddresses = (left: string, right: string): number => {
+  const normalize = (value: string) =>
+    BigInt(`0x${normalizeTraceAddress(value)}`);
+  const a = normalize(left);
+  const b = normalize(right);
+  return a < b ? -1 : a > b ? 1 : 0;
+};
+
+const operationInRange = (
+  address: string,
+  start: string,
+  stop: string,
+): boolean =>
+  compareTraceAddresses(start, address) <= 0 &&
+  compareTraceAddresses(address, stop) <= 0;
+
+/** Keep nodes whose p-code address lies in the closed range and their parameter edges. */
+export const filterNativeValueGraphByRange = <
+  Node extends {
+    readonly id: string;
+    readonly operation: { readonly address: string } | null;
+    readonly kind: "operation" | "parameter";
+  },
+  Edge extends { readonly source: string; readonly target: string },
+>(
+  nodes: readonly Node[],
+  edges: readonly Edge[],
+  start: string,
+  stop: string,
+): { readonly nodes: Node[]; readonly edges: Edge[] } => {
+  const keep = new Set<string>();
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+  const inRangeNode = (node: Node): boolean =>
+    node.kind === "parameter" ||
+    (node.operation !== null &&
+      operationInRange(node.operation.address, start, stop));
+  for (const node of nodes) {
+    if (
+      node.kind === "operation" &&
+      node.operation !== null &&
+      operationInRange(node.operation.address, start, stop)
+    )
+      keep.add(node.id);
+  }
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const edge of edges) {
+      const source = nodeById.get(edge.source);
+      const target = nodeById.get(edge.target);
+      if (source === undefined || target === undefined) continue;
+      if (keep.has(edge.source) && inRangeNode(target) && !keep.has(edge.target)) {
+        keep.add(edge.target);
+        grew = true;
+      }
+      if (keep.has(edge.target) && inRangeNode(source) && !keep.has(edge.source)) {
+        keep.add(edge.source);
+        grew = true;
+      }
+    }
+  }
+  return {
+    nodes: nodes.filter((node) => keep.has(node.id)),
+    edges: edges.filter(
+      (edge) => keep.has(edge.source) && keep.has(edge.target),
+    ),
+  };
+};
+
 export const sliceNativeValueGraph = <
   Node extends { readonly id: string; readonly operation: { readonly address: string } | null },
   Edge extends { readonly source: string; readonly target: string },

@@ -51,6 +51,21 @@ export const ENHANCED_TOOL_CONTRACTS = [
     enhancedInputSchemas.resolve_function_calls,
   ),
   enhanced(
+    "inspect_objc_selector_refs",
+    "List static reference sites for decoded Objective-C selectors using selector-address xrefs, falling back to matching program strings when the metadata row lacks a selector address. Optional class_name and selector filters are exact. Runtime dispatch is unknown.",
+    enhancedInputSchemas.inspect_objc_selector_refs,
+  ),
+  enhanced(
+    "apply_objc_ivars",
+    "Plan, and optionally apply, Ghidra structures from decoded Objective-C ivar layouts. apply defaults to false. Each applied structure uses annotate_native_function on one resolved class method procedure. Unsupported type encodings are omitted from the structure. Original executable bytes are unchanged.",
+    enhancedInputSchemas.apply_objc_ivars,
+  ),
+  enhanced(
+    "trace_native_values_in_region",
+    "Trace a bounded static dependency graph inside one decompiler region of an explicit procedure. Uses inspect_native_regions for the address range, then trace_native_values within that range. Cross-function edges follow the trace budgets. Missing p-code at the region start returns the full in-range graph.",
+    enhancedInputSchemas.trace_native_values_in_region,
+  ),
+  enhanced(
     "get_objc_classes",
     "Discover and deduplicate Objective-C class labels, optionally filtering by literal substring.",
     enhancedInputSchemas.get_objc_classes,

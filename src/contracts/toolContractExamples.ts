@@ -55,6 +55,12 @@ export const TOOL_EXAMPLE_OVERRIDES: Readonly<
   },
   apply_demangled_names: { apply: false },
   apply_objc_signatures: { apply: false },
+  apply_objc_ivars: { apply: false },
+  inspect_objc_selector_refs: {},
+  trace_native_values_in_region: {
+    procedure: "0x1000",
+    region_start: "0x1004",
+  },
   resolve_function_calls: { procedure: "0x1000" },
   inspect_native_regions: { procedure: "0x1000" },
   evaluate_native_pcode: { procedure: "0x1000" },

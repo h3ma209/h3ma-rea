@@ -21,6 +21,9 @@ export const registerCoreNativeCommands = (
   registerDispatchImplementationCommand(cli, logger, runDirectAnalysis);
   registerApplyDemangledNamesCommand(cli, logger, runDirectAnalysis);
   registerApplyObjcSignaturesCommand(cli, logger, runDirectAnalysis);
+  registerApplyObjcIvarsCommand(cli, logger, runDirectAnalysis);
+  registerInspectObjcSelectorRefsCommand(cli, logger, runDirectAnalysis);
+  registerTraceNativeValuesInRegionCommand(cli, logger, runDirectAnalysis);
   registerResolveFunctionCallsCommand(cli, logger, runDirectAnalysis);
   registerInspectNativeRegionsCommand(cli, logger, runDirectAnalysis);
   registerEvaluateNativePcodeCommand(cli, logger, runDirectAnalysis);
@@ -367,6 +370,130 @@ const registerApplyObjcSignaturesCommand = (
             ...(options.selector === undefined
               ? {}
               : { selector: options.selector }),
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerApplyObjcIvarsCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.applyObjcIvars, {
+    description: "Plan or apply Objective-C ivar layouts as Ghidra structures",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+    }),
+    options: z.object({
+      apply: z
+        .boolean()
+        .default(false)
+        .describe("Apply eligible structures; default is dry-run"),
+      className: z.string().min(1).optional().describe("Exact class name"),
+      maxClasses: z
+        .number()
+        .int()
+        .min(1)
+        .max(2_000)
+        .default(200)
+        .describe("Maximum classes to examine"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.applyObjcIvars, () =>
+        runDirectAnalysis(
+          args.path,
+          "apply_objc_ivars",
+          {
+            apply: options.apply,
+            max_classes: options.maxClasses,
+            ...(options.className === undefined
+              ? {}
+              : { class_name: options.className }),
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerInspectObjcSelectorRefsCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.inspectObjcSelectorRefs, {
+    description: "List static reference sites for Objective-C selectors",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+    }),
+    options: z.object({
+      className: z.string().min(1).optional().describe("Exact class name"),
+      selector: z.string().min(1).optional().describe("Exact selector"),
+      maxRefs: z
+        .number()
+        .int()
+        .min(1)
+        .max(20_000)
+        .default(2_000)
+        .describe("Maximum reference sites"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.inspectObjcSelectorRefs, () =>
+        runDirectAnalysis(
+          args.path,
+          "inspect_objc_selector_refs",
+          {
+            max_refs: options.maxRefs,
+            ...(options.className === undefined
+              ? {}
+              : { class_name: options.className }),
+            ...(options.selector === undefined
+              ? {}
+              : { selector: options.selector }),
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerTraceNativeValuesInRegionCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.traceNativeValuesInRegion, {
+    description: "Trace static value flow inside one decompiler region",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+      procedure: z.string().describe("Procedure symbol or address"),
+      regionStart: z.string().describe("Region start address"),
+    }),
+    options: z.object({
+      regionStop: z.string().min(1).optional().describe("Region stop address"),
+      direction: z
+        .enum(["forward", "backward"])
+        .default("forward")
+        .describe("Walk uses or definitions from the region start"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.traceNativeValuesInRegion, () =>
+        runDirectAnalysis(
+          args.path,
+          "trace_native_values_in_region",
+          {
+            procedure: args.procedure,
+            region_start: args.regionStart,
+            direction: options.direction,
+            ...(options.regionStop === undefined
+              ? {}
+              : { region_stop: options.regionStop }),
           },
           directAnalysisOptionsFromCli(logger, options),
         ),
