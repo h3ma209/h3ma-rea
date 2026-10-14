@@ -138,7 +138,9 @@ anatomy components.
 The projection does not read plists. Use `inspect_plist` on a bundle's
 `info_plist_path` or a launchd plist to read `CFBundleExecutable`, identifiers,
 `SMPrivilegedExecutables`, `BundleProgram`, URL schemes, and usage descriptions.
-Use `inspect_signature` on an executable candidate for code-signing claims.
+Use `inspect_signature` on an executable candidate for code-signing claims,
+including designated requirement, entitlements plist, and hardened-runtime
+state. `inspect_macho` groups imports by dylib in `imports_by_source`.
 
 ## Dylib load resolution
 

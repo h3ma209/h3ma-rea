@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { nativeLoadImageObservationSchema } from "../domain/native/nativeLoadImage.js";
+import { nativeMemorySearchSchema } from "../domain/native/nativeMemorySearch.js";
 
 import {
   type AnalysisInputError,
@@ -31,6 +32,7 @@ export const GHIDRA_INVENTORY_OPERATIONS = [
   "resolve_containing_procedure",
   "search_procedures",
   "search_strings",
+  "search_native_memory",
   "set_address_name",
   "set_addresses_names",
 ] as const;
@@ -94,6 +96,15 @@ const inputSchemas = {
     .strict(),
   search_procedures: z.object(searchInput).strict(),
   search_strings: z.object(searchInput).strict(),
+  search_native_memory: z
+    .object({
+      kind: z.enum(["bytes", "immediate", "instruction"]),
+      pattern: z.string().min(1),
+      mask: z.string().nullable().default(null),
+      max_hits: z.number().int().min(1).max(10_000).default(256),
+      document,
+    })
+    .strict(),
   set_address_name: z
     .object({ document, address: explicitAddress, name: z.string().min(1) })
     .strict(),
@@ -305,6 +316,7 @@ const resultSchemas = {
   resolve_containing_procedure: containingProcedure,
   search_procedures: z.array(searchItem),
   search_strings: z.array(searchItem),
+  search_native_memory: nativeMemorySearchSchema,
   set_address_name: z.boolean(),
   set_addresses_names: z.record(z.string(), z.boolean()),
 } satisfies Readonly<Record<GhidraInventoryOperation, z.ZodType>>;

@@ -23,6 +23,10 @@ export const CLI_COMMANDS = Object.freeze({
   trace: "trace",
   traceNativeUiAction: "trace-native-ui-action",
   inspectNativeDispatchMetadata: "inspect-native-dispatch-metadata",
+  inspectNativeDispatchImplementations:
+    "inspect-native-dispatch-implementations",
+  applyDemangledNames: "apply-demangled-names",
+  searchNativeMemory: "search-native-memory",
   capabilities: "capabilities",
   providers: "providers",
   function: "function",

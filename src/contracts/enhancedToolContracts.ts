@@ -31,6 +31,16 @@ export const ENHANCED_TOOL_CONTRACTS = [
     enhancedInputSchemas.inspect_native_dispatch_metadata,
   ),
   enhanced(
+    "inspect_native_dispatch_implementations",
+    "Join decoded Objective-C class/selector/implementation rows with the bound provider's containing-procedure inventory. Optional class_name and selector filters are exact. Unmapped implementations and unresolved procedure joins remain explicit. Runtime dispatch is unknown.",
+    enhancedInputSchemas.inspect_native_dispatch_implementations,
+  ),
+  enhanced(
+    "apply_demangled_names",
+    "Plan, and optionally apply, analyst names from Swift demangle results for mangled symbols in the bound name inventory. apply defaults to false and returns the rename plan only. Application uses set_addresses_names and reports per-address readback. Original executable bytes are unchanged. Windows Ghidra P0 and providers without naming or demangle operations remain unavailable.",
+    enhancedInputSchemas.apply_demangled_names,
+  ),
+  enhanced(
     "get_objc_classes",
     "Discover and deduplicate Objective-C class labels, optionally filtering by literal substring.",
     enhancedInputSchemas.get_objc_classes,

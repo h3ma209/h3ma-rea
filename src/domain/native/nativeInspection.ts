@@ -79,6 +79,11 @@ const symbolSchema = z.object({
   reexport: z.boolean().nullable(),
   source: z.string().nullable(),
 });
+const importSourceGroupSchema = z.object({
+  source: z.string().nullable(),
+  count: z.number().int().min(0),
+  symbols: z.array(z.string()),
+});
 const dependencySchema = z.object({
   path: z.string(),
   kind: z.string(),
@@ -137,6 +142,12 @@ export const inspectMachoSchema = z.object({
   load_commands: coverage(loadCommandSchema),
   dependencies: coverage(dependencySchema),
   imports: coverage(symbolSchema),
+  imports_by_source: coverage(importSourceGroupSchema).default({
+    items: [],
+    total: null,
+    exhaustive: false,
+    limitations: ["Import source grouping was not recorded."],
+  }),
   exports: coverage(symbolSchema),
   segments: coverage(segmentSchema),
   provenance: z.array(nativeCommandInvocationSchema),

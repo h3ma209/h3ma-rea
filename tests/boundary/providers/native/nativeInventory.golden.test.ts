@@ -166,6 +166,11 @@ it("retains native inventory facts from captured Apple tool output", async () =>
         },
       ],
     },
+    imports_by_source: {
+      items: expect.arrayContaining([
+        expect.objectContaining({ source: "libSystem", count: 1 }),
+      ]),
+    },
     exports: {
       items: expect.arrayContaining([
         expect.objectContaining({

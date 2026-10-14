@@ -239,6 +239,7 @@ const sessionInfo = ({
     "resolve_containing_procedure",
     "search_procedures",
     "search_strings",
+    "search_native_memory",
     "set_address_name",
     "set_addresses_names",
     "annotate_native_function",
@@ -295,6 +296,8 @@ const inventoryResultFor = (method) => {
       return [procedureSearchItem()];
     case "search_strings":
       return [stringSearchItem()];
+    case "search_native_memory":
+      return memorySearchResult();
     default:
       return undefined;
   }
@@ -367,4 +370,27 @@ const procedureSearchItem = () => ({
 const stringSearchItem = () => ({
   address: "0x2000",
   value: "fixture value",
+});
+
+const memorySearchResult = () => ({
+  kind: "bytes",
+  pattern: "c3",
+  hits: [
+    {
+      address: "0x1000",
+      kind: "bytes",
+      bytes_hex: "c3",
+      mnemonic: "RET",
+      operands: "RET",
+      immediate: null,
+      procedure: {
+        found: true,
+        address: "0x1000",
+        name: "fixture_main",
+      },
+    },
+  ],
+  hit_count: 1,
+  exhaustive: true,
+  limitations: [],
 });

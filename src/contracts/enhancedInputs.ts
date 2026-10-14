@@ -11,6 +11,23 @@ export const enhancedInputSchemas = {
   inspect_native_dispatch_metadata: z.strictObject({
     max_records: z.number().int().min(1).max(20_000).default(5_000),
   }),
+  inspect_native_dispatch_implementations: z.strictObject({
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+    class_name: z.string().min(1).optional(),
+    selector: z.string().min(1).optional(),
+    resolve_procedures: z.boolean().default(true),
+  }),
+  apply_demangled_names: z.strictObject({
+    apply: z.boolean().default(false),
+    pattern: z
+      .string()
+      .min(1)
+      .optional()
+      .describe(
+        "Case-sensitive literal filter applied to current names and demangled text",
+      ),
+    max_names: z.number().int().min(1).max(10_000).default(500),
+  }),
   get_objc_classes: z.strictObject({ pattern: z.string().default("") }),
   get_objc_protocols: z.strictObject({}),
   batch_decompile: z.strictObject({

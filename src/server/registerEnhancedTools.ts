@@ -60,6 +60,10 @@ export const registerEnhancedTools = (
   const nativeDispatchMetadata = toolContract(
     "inspect_native_dispatch_metadata",
   );
+  const nativeDispatchImplementations = toolContract(
+    "inspect_native_dispatch_implementations",
+  );
+  const applyDemangledNames = toolContract("apply_demangled_names");
   const objcClasses = toolContract("get_objc_classes");
   const objcProtocols = toolContract("get_objc_protocols");
   const batchDecompile = toolContract("batch_decompile");
@@ -88,6 +92,27 @@ export const registerEnhancedTools = (
     (input, context) =>
       executeEnhancedTool(registration, nativeDispatchMetadata, {
         validatedCall: { name: "inspect_native_dispatch_metadata", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    nativeDispatchImplementations.name,
+    toolRegistrationOptions(nativeDispatchImplementations),
+    (input, context) =>
+      executeEnhancedTool(registration, nativeDispatchImplementations, {
+        validatedCall: {
+          name: "inspect_native_dispatch_implementations",
+          input,
+        },
+        context,
+      }),
+  );
+  server.registerTool(
+    applyDemangledNames.name,
+    toolRegistrationOptions(applyDemangledNames),
+    (input, context) =>
+      executeEnhancedTool(registration, applyDemangledNames, {
+        validatedCall: { name: "apply_demangled_names", input },
         context,
       }),
   );

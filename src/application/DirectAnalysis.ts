@@ -69,6 +69,9 @@ type DirectAnalysisTool =
   | "analyze_function"
   | "inspect_native_api"
   | "inspect_native_dispatch_metadata"
+  | "inspect_native_dispatch_implementations"
+  | "apply_demangled_names"
+  | "search_native_memory"
   | "search_strings"
   | "search_procedures"
   | "xrefs"
@@ -389,6 +392,8 @@ const executeAnalysisTool = async (input: {
     tool === "binary_overview" ||
     tool === "inspect_native_api" ||
     tool === "inspect_native_dispatch_metadata" ||
+    tool === "inspect_native_dispatch_implementations" ||
+    tool === "apply_demangled_names" ||
     tool === "trace_feature" ||
     tool === "trace_native_values" ||
     tool === "trace_native_ui_action"
@@ -585,6 +590,8 @@ const isWorkflowEvidenceTool = (
   tool === "binary_overview" ||
   tool === "inspect_native_api" ||
   tool === "inspect_native_dispatch_metadata" ||
+  tool === "inspect_native_dispatch_implementations" ||
+  tool === "apply_demangled_names" ||
   tool === "trace_feature" ||
   tool === "trace_native_values" ||
   tool === "trace_native_ui_action";

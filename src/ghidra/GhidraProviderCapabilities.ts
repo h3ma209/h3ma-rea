@@ -68,7 +68,7 @@ export const limitationsFor = (operation: string): readonly string[] => {
     case "annotate_native_function":
       return [
         ...common,
-        "Names use Ghidra USER_DEFINED source. Name writes accept a leaf name or a fully qualified name within the existing namespace; readback uses the fully qualified name and can be reused without adding namespace prefixes. Edits retain the current namespace; other namespace-like text remains literal leaf-name text. Regular comments map to PRE and inline comments to EOL at the exact function entry. Changes commit together after readback and refreshed analysis; failure rolls them all back.",
+        "Names use Ghidra USER_DEFINED source. Name writes accept a leaf name or a fully qualified name within the existing namespace; readback uses the fully qualified name and can be reused without adding namespace prefixes. Edits retain the current namespace; other namespace-like text remains literal leaf-name text. Regular comments map to PRE and inline comments to EOL at the exact function entry. Signature, local, and structure edits use Ghidra's function and data-type APIs in the same transaction. Changes commit together after readback and refreshed analysis; failure rolls them all back.",
         "Annotation text rejects NUL and unpaired Unicode surrogates before mutation, with the field and UTF-16 index in the error. Supported Unicode and line endings are preserved.",
         "Metadata edits invalidate immutable analysis snapshots and are discarded on close. CLI returns the updated dossier before session cleanup; this is not a saved Ghidra project.",
       ];
@@ -131,6 +131,11 @@ export const limitationsFor = (operation: string): readonly string[] => {
       return [...common, searchLimitation];
     case "search_strings":
       return [...common, stringInventoryLimitation, searchLimitation];
+    case "search_native_memory":
+      return [
+        ...common,
+        "Byte search covers Ghidra initialized memory, including loader fixups. Immediate and instruction searches iterate the Listing. Hits stop at max_hits; exhaustive is false when that budget is reached. Unresolved containing procedures remain explicit.",
+      ];
     case "procedure_pseudo_code":
       return [
         ...common,

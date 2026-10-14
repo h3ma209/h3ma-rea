@@ -102,7 +102,28 @@ rea inspect-native-instruction <binary> <address> --provider ghidra
 rea resolve-native-call-targets <binary> <call-site> --provider ghidra
 rea inspect-native-data-type <binary> --type /MyStruct --provider ghidra
 rea inspect-native-data-type <binary> --address <typed-data-address> --provider ghidra
+rea search-native-memory <binary> "de ad be ef" --kind bytes --provider ghidra
+rea inspect-native-dispatch-implementations <binary> --class-name BuildViewController --provider ghidra
+rea apply-demangled-names <binary> --provider ghidra
 ```
+
+`search_native_memory` searches initialized Ghidra memory for byte patterns
+(hex with optional `??` wildcards), instruction scalars, or mnemonic/operand
+text. Each hit reports a containing procedure or an explicit miss. Results stop
+at `max_hits`; `exhaustive` is false when that budget is reached. Hopper does
+not advertise this operation.
+
+`inspect_native_dispatch_implementations` joins decoded Objective-C
+class/selector/implementation rows to containing procedures. Unmapped
+implementations stay explicit; runtime dispatch remains unknown.
+
+`apply_demangled_names` demangles Swift-mangled names from the bound inventory
+and returns a rename plan. `apply` defaults to false. Application uses
+`set_addresses_names` and reports per-address readback.
+
+`annotate_native_function` can also set a C-like signature, rename or retype
+existing locals, and create session-database structures in the same atomic
+transaction. Invalid edits still roll back.
 
 Instruction facts include bytes, length, decoder text, ordered register/scalar/
 address tokens, typed references and flow destinations. Mid-instruction, data,

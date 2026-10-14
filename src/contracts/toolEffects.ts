@@ -411,6 +411,15 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
   }),
   inspect_native_load_image: evidence,
   inspect_native_dispatch_metadata: evidence,
+  inspect_native_dispatch_implementations: evidence,
+  apply_demangled_names: effects({
+    mutatesTarget: true,
+    mutatesSession: true,
+    launchesProcess: true,
+    writesFilesystem: true,
+    mayDiscardData: true,
+    idempotent: false,
+  }),
   trace_native_ui_action: evidence,
   trace_native_values: evidence,
   address_name: evidence,
@@ -442,6 +451,7 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
   procedure_references: evidence,
   procedure_pseudo_code: evidence,
   resolve_containing_procedure: evidence,
+  search_native_memory: evidence,
   search_procedures: evidence,
   search_strings: evidence,
   set_address_name: effects({

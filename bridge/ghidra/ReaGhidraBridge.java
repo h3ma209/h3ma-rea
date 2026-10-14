@@ -142,6 +142,7 @@ public final class ReaGhidraBridge extends HeadlessScript {
         "resolve_containing_procedure",
         "search_procedures",
         "search_strings",
+        "search_native_memory",
         "analyze_function",
         "procedure_assembly",
         "procedure_callees",
@@ -384,6 +385,7 @@ public final class ReaGhidraBridge extends HeadlessScript {
             case "resolve_containing_procedure" -> containingProcedure(request.params);
             case "search_procedures" -> search(request.params, true);
             case "search_strings" -> search(request.params, false);
+            case "search_native_memory" -> searchNativeMemory(request.params);
             case "inspect_native_data_type" -> inspectNativeDataType(request.params);
             case "inspect_native_instruction" -> inspectNativeInstruction(request.params, true);
             case "resolve_native_call_targets" -> resolveNativeCallTargets(request.params);
@@ -1170,13 +1172,43 @@ public final class ReaGhidraBridge extends HeadlessScript {
         value.addProperty("name", procedureName(function));
         value.addProperty("comment", currentProgram.getListing().getComment(CommentType.PRE, entry));
         value.addProperty("inline_comment", currentProgram.getListing().getComment(CommentType.EOL, entry));
+        value.addProperty("signature", function.getPrototypeString(false, false));
+        JsonArray locals = new JsonArray();
+        for (Variable variable : function.getLocalVariables()) {
+            JsonObject local = new JsonObject();
+            local.addProperty("name", variable.getName());
+            local.add(
+                "data_type",
+                variable.getDataType() == null
+                    ? JsonNull.INSTANCE
+                    : GSON.toJsonTree(variable.getDataType().getPathName())
+            );
+            local.add(
+                "storage",
+                variable.getVariableStorage() == null
+                    ? JsonNull.INSTANCE
+                    : GSON.toJsonTree(variable.getVariableStorage().toString())
+            );
+            locals.add(local);
+        }
+        value.add("locals", locals);
+        if (!value.has("structures")) value.add("structures", new JsonArray());
         return value;
     }
 
     private JsonObject annotateNativeFunction(JsonObject params) throws Exception {
-        if (!Set.of("procedure", "name", "comment", "inline_comment").containsAll(params.keySet()))
+        if (!Set.of(
+                "procedure",
+                "name",
+                "comment",
+                "inline_comment",
+                "signature",
+                "locals",
+                "structures"
+            ).containsAll(params.keySet()))
             throw new RequestFailure("invalid_request", "Unknown function annotation field");
-        if (!params.has("name") && !params.has("comment") && !params.has("inline_comment"))
+        if (!params.has("name") && !params.has("comment") && !params.has("inline_comment")
+                && !params.has("signature") && !params.has("locals") && !params.has("structures"))
             throw new RequestFailure("invalid_request", "Supply at least one annotation change");
         Function function = resolveProcedure(requireString(params, "procedure"));
         Address entry = function.getEntryPoint();
@@ -1201,9 +1233,17 @@ public final class ReaGhidraBridge extends HeadlessScript {
             }
             if (params.has("name"))
                 function.setName(leafName, SourceType.USER_DEFINED);
+            if (params.has("signature"))
+                applyFunctionSignature(function, requireString(params, "signature"));
+            if (params.has("locals"))
+                applyLocalAnnotations(function, params.getAsJsonArray("locals"));
+            JsonArray createdStructures = params.has("structures")
+                ? applyStructureAnnotations(params.getAsJsonArray("structures"))
+                : new JsonArray();
             monitor.checkCancelled();
             invalidateAnalysisCaches();
             JsonObject readback = annotationReadback(function);
+            readback.add("structures", createdStructures);
             for (String field : List.of("name", "comment", "inline_comment")) {
                 if (!params.has(field)) continue;
                 String requested = requireText(params, field);
@@ -1230,6 +1270,15 @@ public final class ReaGhidraBridge extends HeadlessScript {
         }
         catch (ghidra.util.exception.InvalidInputException | ghidra.util.exception.DuplicateNameException exception) {
             throw new RequestFailure("invalid_function_name", "Invalid function name at " + canonicalAddress(entry) + ": " + safeMessage(exception));
+        }
+        catch (RequestFailure exception) {
+            throw exception;
+        }
+        catch (Exception exception) {
+            throw new RequestFailure(
+                "invalid_request",
+                "Function annotation failed at " + canonicalAddress(entry) + ": " + safeMessage(exception)
+            );
         }
         finally {
             currentProgram.endTransaction(transaction, commit);
@@ -1273,6 +1322,116 @@ public final class ReaGhidraBridge extends HeadlessScript {
             }
             if (Character.isSurrogate(character))
                 throw new RequestFailure("invalid_request", "Annotation " + field + " contains an unpaired Unicode surrogate at UTF-16 index " + index + "; Ghidra cannot preserve it as annotation text");
+        }
+    }
+
+    private void applyFunctionSignature(Function function, String signature) throws Exception {
+        ghidra.app.util.parser.FunctionSignatureParser parser =
+            new ghidra.app.util.parser.FunctionSignatureParser(
+                currentProgram.getDataTypeManager(),
+                null
+            );
+        ghidra.program.model.data.FunctionDefinitionDataType definition = parser.parse(
+            function.getSignature(),
+            signature
+        );
+        ghidra.app.cmd.function.ApplyFunctionSignatureCmd command =
+            new ghidra.app.cmd.function.ApplyFunctionSignatureCmd(
+                function.getEntryPoint(),
+                definition,
+                SourceType.USER_DEFINED
+            );
+        if (!command.applyTo(currentProgram, monitor))
+            throw new RequestFailure(
+                "invalid_request",
+                "Ghidra rejected function signature at " + canonicalAddress(function.getEntryPoint())
+            );
+    }
+
+    private void applyLocalAnnotations(Function function, JsonArray locals) throws Exception {
+        Map<String, Variable> byName = new LinkedHashMap<>();
+        for (Variable variable : function.getLocalVariables())
+            byName.putIfAbsent(variable.getName(), variable);
+        for (JsonElement element : locals) {
+            monitor.checkCancelled();
+            if (!element.isJsonObject())
+                throw new RequestFailure("invalid_request", "Each local annotation must be an object");
+            JsonObject local = element.getAsJsonObject();
+            String currentName = requireString(local, "current_name");
+            Variable variable = byName.get(currentName);
+            if (variable == null)
+                throw new RequestFailure(
+                    "invalid_request",
+                    "No local named " + currentName + " at " + canonicalAddress(function.getEntryPoint())
+                );
+            if (local.has("data_type") && !local.get("data_type").isJsonNull())
+                variable.setDataType(parseAnnotationDataType(requireString(local, "data_type")), SourceType.USER_DEFINED);
+            if (local.has("name") && !local.get("name").isJsonNull())
+                variable.setName(requireString(local, "name"), SourceType.USER_DEFINED);
+        }
+    }
+
+    private JsonArray applyStructureAnnotations(JsonArray structures) throws Exception {
+        JsonArray created = new JsonArray();
+        ghidra.program.model.data.DataTypeManager manager = currentProgram.getDataTypeManager();
+        for (JsonElement element : structures) {
+            monitor.checkCancelled();
+            if (!element.isJsonObject())
+                throw new RequestFailure("invalid_request", "Each structure annotation must be an object");
+            JsonObject structure = element.getAsJsonObject();
+            String name = requireString(structure, "name");
+            int size = structure.has("size") && !structure.get("size").isJsonNull()
+                ? requireInteger(structure, "size")
+                : 0;
+            ghidra.program.model.data.StructureDataType dataType =
+                new ghidra.program.model.data.StructureDataType(name, size);
+            JsonArray fields = structure.getAsJsonArray("fields");
+            if (fields == null)
+                throw new RequestFailure("invalid_request", "Structure " + name + " requires fields");
+            for (JsonElement fieldElement : fields) {
+                if (!fieldElement.isJsonObject())
+                    throw new RequestFailure("invalid_request", "Each structure field must be an object");
+                JsonObject field = fieldElement.getAsJsonObject();
+                DataType fieldType = parseAnnotationDataType(requireString(field, "data_type"));
+                int length = field.has("length") && !field.get("length").isJsonNull()
+                    ? requireInteger(field, "length")
+                    : fieldType.getLength();
+                dataType.replaceAtOffset(
+                    requireInteger(field, "offset"),
+                    fieldType,
+                    length,
+                    requireString(field, "name"),
+                    null
+                );
+            }
+            DataType resolved = manager.addDataType(
+                dataType,
+                ghidra.program.model.data.DataTypeConflictHandler.REPLACE_HANDLER
+            );
+            JsonObject readback = new JsonObject();
+            readback.addProperty("name", resolved.getName());
+            readback.addProperty("path", resolved.getPathName());
+            readback.add("size_bytes", resolved.getLength() < 0 ? JsonNull.INSTANCE : GSON.toJsonTree(resolved.getLength()));
+            created.add(readback);
+        }
+        return created;
+    }
+
+    private DataType parseAnnotationDataType(String path) throws Exception {
+        DataType existing = currentProgram.getDataTypeManager().getDataType(path);
+        if (existing != null) return existing;
+        try {
+            return new ghidra.util.data.DataTypeParser(
+                currentProgram.getDataTypeManager(),
+                null,
+                null,
+                ghidra.util.data.DataTypeParser.AllowedDataTypes.ALL
+            ).parse(path);
+        } catch (Exception exception) {
+            throw new RequestFailure(
+                "invalid_request",
+                "Unknown data type " + path + ": " + safeMessage(exception)
+            );
         }
     }
 
@@ -1780,6 +1939,199 @@ public final class ReaGhidraBridge extends HeadlessScript {
             items.add(resultItem(item, null));
         }
         return items;
+    }
+
+    private JsonObject searchNativeMemory(JsonObject params) throws Exception {
+        requireKeys(params, Set.of("kind", "pattern", "mask", "max_hits", "document"));
+        requireDocument(params);
+        String kind = requireString(params, "kind");
+        if (!Set.of("bytes", "immediate", "instruction").contains(kind))
+            throw new RequestFailure("invalid_request", "kind must be bytes, immediate, or instruction");
+        String pattern = requireString(params, "pattern");
+        String mask = optionalString(params, "mask");
+        int maxHits = requireBoundedInteger(params, "max_hits", 1, 10_000);
+        JsonArray hits = new JsonArray();
+        boolean exhaustive = true;
+        if (kind.equals("bytes"))
+            exhaustive = searchMemoryBytes(hits, pattern, mask, maxHits);
+        else if (kind.equals("immediate"))
+            exhaustive = searchMemoryImmediates(hits, pattern, maxHits);
+        else
+            exhaustive = searchMemoryInstructions(hits, pattern, maxHits);
+        JsonObject result = new JsonObject();
+        result.addProperty("kind", kind);
+        result.addProperty("pattern", pattern);
+        result.add("hits", hits);
+        result.addProperty("hit_count", hits.size());
+        result.addProperty("exhaustive", exhaustive);
+        JsonArray limitations = new JsonArray();
+        if (!exhaustive)
+            limitations.add("Hit budget max_hits was reached; remaining matches were not examined.");
+        result.add("limitations", limitations);
+        return result;
+    }
+
+    private boolean searchMemoryBytes(JsonArray hits, String pattern, String mask, int maxHits)
+            throws Exception {
+        byte[] bytes = parseSearchBytes(pattern);
+        byte[] masks = mask == null ? wildcardMask(pattern) : parseSearchBytes(mask.replace('?', '0'));
+        if (masks.length != bytes.length)
+            throw new RequestFailure("invalid_request", "mask length must match the byte pattern");
+        Address start = currentProgram.getMinAddress();
+        Address end = currentProgram.getMaxAddress();
+        while (start != null && start.compareTo(end) <= 0) {
+            monitor.checkCancelled();
+            Address found = currentProgram.getMemory().findBytes(start, end, bytes, masks, true, monitor);
+            if (found == null) return true;
+            if (hits.size() >= maxHits) return false;
+            hits.add(memoryHit("bytes", found, bytesToHex(found, bytes.length), null, null, null));
+            try {
+                start = found.addNoWrap(1);
+            } catch (ghidra.program.model.address.AddressOverflowException overflow) {
+                return true;
+            }
+        }
+        return true;
+    }
+
+    private boolean searchMemoryImmediates(JsonArray hits, String pattern, int maxHits) throws Exception {
+        long expected;
+        try {
+            expected = Long.decode(pattern);
+        } catch (NumberFormatException exception) {
+            throw new RequestFailure("invalid_request", "immediate pattern must be an integer or 0x hex value");
+        }
+        InstructionIterator instructions = currentProgram.getListing().getInstructions(true);
+        while (instructions.hasNext()) {
+            monitor.checkCancelled();
+            Instruction instruction = instructions.next();
+            for (int operand = 0; operand < instruction.getNumOperands(); operand++) {
+                for (Object object : instruction.getOpObjects(operand)) {
+                    if (!(object instanceof Scalar scalar)) continue;
+                    if (scalar.getSignedValue() != expected && scalar.getUnsignedValue() != expected) continue;
+                    if (hits.size() >= maxHits) return false;
+                    hits.add(memoryHit(
+                        "immediate",
+                        instruction.getAddress(),
+                        instructionBytesHex(instruction),
+                        instruction.getMnemonicString(),
+                        instruction.getDefaultOperandRepresentation(operand),
+                        Long.toString(expected)
+                    ));
+                }
+            }
+        }
+        return true;
+    }
+
+    private boolean searchMemoryInstructions(JsonArray hits, String pattern, int maxHits) throws Exception {
+        String trimmed = pattern.trim();
+        int split = trimmed.indexOf(' ');
+        String mnemonic = (split < 0 ? trimmed : trimmed.substring(0, split)).toLowerCase(Locale.ROOT);
+        String operand = split < 0 ? "" : trimmed.substring(split + 1).trim().toLowerCase(Locale.ROOT);
+        InstructionIterator instructions = currentProgram.getListing().getInstructions(true);
+        while (instructions.hasNext()) {
+            monitor.checkCancelled();
+            Instruction instruction = instructions.next();
+            if (!instruction.getMnemonicString().toLowerCase(Locale.ROOT).equals(mnemonic)) continue;
+            String representation = instruction.toString().toLowerCase(Locale.ROOT);
+            if (!operand.isEmpty() && !representation.contains(operand)) continue;
+            if (hits.size() >= maxHits) return false;
+            hits.add(memoryHit(
+                "instruction",
+                instruction.getAddress(),
+                instructionBytesHex(instruction),
+                instruction.getMnemonicString(),
+                instruction.toString(),
+                null
+            ));
+        }
+        return true;
+    }
+
+    private JsonObject memoryHit(
+            String kind,
+            Address address,
+            String bytesHex,
+            String mnemonic,
+            String operands,
+            String immediate
+    ) {
+        JsonObject hit = new JsonObject();
+        hit.addProperty("address", canonicalAddress(address));
+        hit.addProperty("kind", kind);
+        hit.add("bytes_hex", bytesHex == null ? JsonNull.INSTANCE : GSON.toJsonTree(bytesHex));
+        hit.add("mnemonic", mnemonic == null ? JsonNull.INSTANCE : GSON.toJsonTree(mnemonic));
+        hit.add("operands", operands == null ? JsonNull.INSTANCE : GSON.toJsonTree(operands));
+        hit.add("immediate", immediate == null ? JsonNull.INSTANCE : GSON.toJsonTree(immediate));
+        Function function = currentProgram.getFunctionManager().getFunctionContaining(address);
+        JsonObject procedure = new JsonObject();
+        if (function != null) {
+            procedure.addProperty("found", true);
+            procedure.addProperty("address", canonicalAddress(function.getEntryPoint()));
+            procedure.addProperty("name", procedureName(function));
+        } else {
+            procedure.addProperty("found", false);
+            procedure.add("address", JsonNull.INSTANCE);
+            procedure.add("name", JsonNull.INSTANCE);
+            boolean inside = address.isMemoryAddress() && currentProgram.getMemory().contains(address);
+            procedure.addProperty("reason", inside ? "not_in_procedure" : "outside_segments");
+        }
+        hit.add("procedure", procedure);
+        return hit;
+    }
+
+    private byte[] parseSearchBytes(String pattern) {
+        String compact = pattern.replaceAll("\\s+", "");
+        if (compact.length() % 2 != 0)
+            throw new RequestFailure("invalid_request", "Byte patterns require an even number of hex digits");
+        byte[] bytes = new byte[compact.length() / 2];
+        for (int index = 0; index < bytes.length; index++) {
+            String token = compact.substring(index * 2, index * 2 + 2);
+            if (token.equals("??") || token.equals("??".toLowerCase(Locale.ROOT))) {
+                bytes[index] = 0;
+                continue;
+            }
+            try {
+                bytes[index] = (byte) Integer.parseInt(token, 16);
+            } catch (NumberFormatException exception) {
+                throw new RequestFailure("invalid_request", "Byte pattern contains a non-hex token");
+            }
+        }
+        return bytes;
+    }
+
+    private byte[] wildcardMask(String pattern) {
+        String compact = pattern.replaceAll("\\s+", "");
+        byte[] masks = new byte[compact.length() / 2];
+        for (int index = 0; index < masks.length; index++) {
+            String token = compact.substring(index * 2, index * 2 + 2);
+            masks[index] = token.equalsIgnoreCase("??") ? 0 : (byte) 0xff;
+        }
+        return masks;
+    }
+
+    private String bytesToHex(Address address, int length) {
+        try {
+            byte[] bytes = new byte[length];
+            currentProgram.getMemory().getBytes(address, bytes);
+            StringBuilder hex = new StringBuilder();
+            for (byte value : bytes) hex.append(String.format("%02x", value & 0xff));
+            return hex.toString();
+        } catch (Exception exception) {
+            return null;
+        }
+    }
+
+    private String instructionBytesHex(Instruction instruction) {
+        try {
+            byte[] bytes = instruction.getBytes();
+            StringBuilder hex = new StringBuilder();
+            for (byte value : bytes) hex.append(String.format("%02x", value & 0xff));
+            return hex.toString();
+        } catch (ghidra.program.model.mem.MemoryAccessException exception) {
+            return null;
+        }
     }
 
     private List<InventoryItem> names() throws Exception {

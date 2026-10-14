@@ -107,7 +107,7 @@ export const NATIVE_TOOL_CONTRACTS = [
   ),
   native(
     "inspect_signature",
-    "Inspect the active artifact's code-signing identity, hashes, authorities, requirements, entitlements, hardened-runtime state, and exact command provenance.",
+    "Inspect the active artifact's code-signing identity, hashes, authorities, designated requirement, entitlements plist, hardened-runtime flag, and exact command provenance. Entitlements come from a bounded codesign --entitlements capture, not from display diagnostics.",
     z.object({}),
   ),
   native(

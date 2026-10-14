@@ -17,6 +17,9 @@ export const registerCoreNativeCommands = (
   runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
 ): void => {
   registerAnnotationCommand(cli, logger, runDirectAnalysis);
+  registerSearchNativeMemoryCommand(cli, logger, runDirectAnalysis);
+  registerDispatchImplementationCommand(cli, logger, runDirectAnalysis);
+  registerApplyDemangledNamesCommand(cli, logger, runDirectAnalysis);
   cli.command(CLI_COMMANDS.inspectNativeLoadImage, {
     description:
       "Verify loaded native bytes, source mappings, relocations and entry",
@@ -213,6 +216,145 @@ export const registerCoreNativeCommands = (
   registerNativeDispatchMetadataCommand(cli, logger, runDirectAnalysis);
 };
 
+const registerSearchNativeMemoryCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.searchNativeMemory, {
+    description: "Search program memory for bytes, immediates, or instructions",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+      pattern: z.string().min(1).describe("Byte hex, immediate, or mnemonic"),
+    }),
+    options: z.object({
+      kind: z
+        .enum(["bytes", "immediate", "instruction"])
+        .default("bytes")
+        .describe("Search kind"),
+      mask: z.string().min(1).optional().describe("Optional hex mask"),
+      maxHits: z
+        .number()
+        .int()
+        .min(1)
+        .max(10_000)
+        .default(256)
+        .describe("Maximum hits to return"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.searchNativeMemory, () =>
+        runDirectAnalysis(
+          args.path,
+          "search_native_memory",
+          {
+            kind: options.kind,
+            pattern: args.pattern,
+            ...(options.mask === undefined ? {} : { mask: options.mask }),
+            max_hits: options.maxHits,
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerDispatchImplementationCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.inspectNativeDispatchImplementations, {
+    description:
+      "Map Objective-C class/selector implementations to containing procedures",
+    args: z.object({
+      path: z.string().describe("Target path used to bind the result evidence"),
+    }),
+    options: z.object({
+      maxRecords: z
+        .number()
+        .int()
+        .min(1)
+        .max(20_000)
+        .default(5_000)
+        .describe("Maximum decoded implementation rows"),
+      className: z.string().min(1).optional().describe("Exact class name"),
+      selector: z.string().min(1).optional().describe("Exact selector"),
+      resolveProcedures: z
+        .boolean()
+        .default(true)
+        .describe("Resolve containing procedures"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(
+        logger,
+        CLI_COMMANDS.inspectNativeDispatchImplementations,
+        () =>
+          runDirectAnalysis(
+            args.path,
+            "inspect_native_dispatch_implementations",
+            {
+              max_records: options.maxRecords,
+              resolve_procedures: options.resolveProcedures,
+              ...(options.className === undefined
+                ? {}
+                : { class_name: options.className }),
+              ...(options.selector === undefined
+                ? {}
+                : { selector: options.selector }),
+            },
+            directAnalysisOptionsFromCli(logger, options),
+          ),
+      ),
+  });
+};
+
+const registerApplyDemangledNamesCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.applyDemangledNames, {
+    description: "Plan or apply Swift-demangle names onto the symbol inventory",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+    }),
+    options: z.object({
+      apply: z
+        .boolean()
+        .default(false)
+        .describe("Apply the rename plan; default is dry-run"),
+      pattern: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("Literal filter on current or demangled names"),
+      maxNames: z
+        .number()
+        .int()
+        .min(1)
+        .max(10_000)
+        .default(500)
+        .describe("Maximum mangled names to examine"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.applyDemangledNames, () =>
+        runDirectAnalysis(
+          args.path,
+          "apply_demangled_names",
+          {
+            apply: options.apply,
+            max_names: options.maxNames,
+            ...(options.pattern === undefined ? {} : { pattern: options.pattern }),
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
 const registerNativeDispatchMetadataCommand = (
   cli: CliInstance,
   logger: Logger,
@@ -362,6 +504,11 @@ const registerAnnotationCommand = (
         .string()
         .optional()
         .describe("Inline entry comment; empty text clears it"),
+      signature: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("Ghidra C-like function signature"),
       ...nativeOpenOptionFields,
     }),
     run: ({ args, options }) =>
@@ -378,6 +525,9 @@ const registerAnnotationCommand = (
             ...(options["inline-comment"] === undefined
               ? {}
               : { inline_comment: options["inline-comment"] }),
+            ...(options.signature === undefined
+              ? {}
+              : { signature: options.signature }),
           },
           directAnalysisOptionsFromCli(logger, options),
         ),

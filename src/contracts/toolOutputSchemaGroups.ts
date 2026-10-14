@@ -11,6 +11,9 @@ import {
   rawBinaryEntryPointSchema,
 } from "../domain/rawBinary.js";
 import { nativeFunctionAnnotationsSchema } from "../domain/native/nativeFunctionAnnotations.js";
+import { nativeMemorySearchSchema } from "../domain/native/nativeMemorySearch.js";
+import { nativeDispatchImplementationMapSchema } from "../domain/native/nativeDispatchImplementationMap.js";
+import { applyDemangledNamesSchema } from "../domain/native/demangledNames.js";
 import { nativeLoadImageSchema } from "../domain/native/nativeLoadImage.js";
 import { nativeUiResultSchema } from "../domain/native/nativeUiObservation.js";
 import { nativeValueTraceSchema } from "../domain/native/nativeValueTrace.js";
@@ -184,6 +187,7 @@ export const officialOutputSchemas: Readonly<Record<string, z.ZodObject>> = {
   ),
   procedure_pseudo_code: evidenceResultOf(nullableText),
   resolve_containing_procedure: evidenceResultOf(containingProcedureResolution),
+  search_native_memory: evidenceResultOf(nativeMemorySearchSchema),
   search_procedures: evidenceResultOf(
     z.array(z.object({ address: z.string(), value: z.string() })),
   ),
@@ -278,6 +282,10 @@ export const enhancedOutputSchemas: Readonly<Record<string, z.ZodObject>> = {
   inspect_native_dispatch_metadata: evidenceResultOf(
     nativeDispatchMetadataResultSchema,
   ),
+  inspect_native_dispatch_implementations: evidenceResultOf(
+    nativeDispatchImplementationMapSchema,
+  ),
+  apply_demangled_names: evidenceResultOf(applyDemangledNamesSchema),
   trace_native_values: evidenceResultOf(nativeValueTraceSchema),
   trace_native_ui_action: evidenceResultOf(nativeInvestigationTraceSchema),
   get_objc_classes: symbolDiscoveryOutput("classes"),

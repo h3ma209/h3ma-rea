@@ -106,6 +106,11 @@ const ENHANCED_REQUIREMENTS: Readonly<Record<string, readonly string[]>> = {
     "procedure_callees",
   ],
   inspect_native_dispatch_metadata: ["list_names"],
+  inspect_native_dispatch_implementations: [
+    "list_names",
+    "resolve_containing_procedure",
+  ],
+  apply_demangled_names: ["list_names", "demangle_swift", "set_addresses_names"],
   get_objc_classes: ["list_names"],
   get_objc_protocols: ["list_names"],
   batch_decompile: ["procedure_pseudo_code"],

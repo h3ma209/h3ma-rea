@@ -183,6 +183,20 @@ async function verifyDebugInventoryCore({
     !filteredNames.some((item) => item.value === name.value)
   )
     throw new Error("Ghidra exact-address name filter drifted");
+  const memorySearch = await call(client, "search_native_memory", {
+    kind: "bytes",
+    pattern: "52 45 41 5f 47 48 49 44 52 41",
+    mask: null,
+    max_hits: 256,
+    document: null,
+  });
+  if (
+    memorySearch.kind !== "bytes" ||
+    !memorySearch.exhaustive ||
+    memorySearch.hit_count < 1 ||
+    memorySearch.hits[0]?.bytes_hex !== "5245415f474849445241"
+  )
+    throw new Error("Ghidra native memory search drifted");
   const functionAnalysis = await verifyDebugFunctionOperations(client, {
     procedures,
     strings,

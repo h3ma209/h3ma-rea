@@ -231,7 +231,11 @@ and Cortex-M variants are unsupported. See [raw binary guide](https://github.com
 
 ### Function annotations in Ghidra
 
-Use `annotate_native_function` for one function name and/or entry comments, with at least one explicit change. Review its annotation readback and refreshed dossier inline. Changes are atomic and session-scoped; empty comments clear them, omitted fields preserve them. Later MCP calls observe edits until close. CLI `annotate-native-function` returns the updated analysis before discarding the session. Original executable bytes are unchanged; edits invalidate immutable snapshots. Windows P0 does not admit database mutations. For naming only, `set_address_name` / `set_addresses_names` also work with Ghidra: they name function entries or data addresses (primary labels) and return compact per-address success booleans instead of a dossier.
+Use `annotate_native_function` for one function name, entry comments, C-like signature, local names/types, and/or session-database structures, with at least one explicit change. Review its annotation readback and refreshed dossier inline. Changes are atomic and session-scoped; empty comments clear them, omitted fields preserve them. Later MCP calls observe edits until close. CLI `annotate-native-function` returns the updated analysis before discarding the session. Original executable bytes are unchanged; edits invalidate immutable snapshots. Windows P0 does not admit database mutations. For naming only, `set_address_name` / `set_addresses_names` also work with Ghidra: they name function entries or data addresses (primary labels) and return compact per-address success booleans instead of a dossier. `apply_demangled_names` plans Swift-demangle renames first (`apply` defaults to false) and applies them only when requested.
+
+Use `search_native_memory` for byte patterns (hex with optional `??` wildcards), scalar immediates, or instruction mnemonics. Hits include containing-procedure resolution and stop at `max_hits`. Hopper does not advertise this operation.
+
+Use `inspect_native_dispatch_implementations` to join decoded Objective-C class/selector/implementation addresses to containing procedures. Unmapped implementations remain explicit.
 
 ## Offline PE resource inventory
 

@@ -31,6 +31,8 @@ import {
   discoverObjcProtocols,
 } from "../domain/symbolAnalysis.js";
 import { inspectNativeDispatch } from "./native/NativeDispatchMetadataInspection.js";
+import { inspectNativeDispatchImplementations } from "./native/NativeDispatchImplementationMap.js";
+import { applyDemangledNames } from "./native/ApplyDemangledNames.js";
 import { traceNativeValues } from "./native/NativeValueTrace.js";
 import { traceNativeUiAction } from "./native/NativeUiActionTrace.js";
 import { jsonValueSchema, type JsonValue } from "../domain/jsonValue.js";
@@ -88,6 +90,22 @@ export class EnhancedTools {
           ? this.executeValidated({ name, input: parsed.data }, signal)
           : invalidEnhancedInput(name, parsed.error);
       }
+      case "inspect_native_dispatch_implementations": {
+        const parsed =
+          enhancedInputSchemas.inspect_native_dispatch_implementations.safeParse(
+            input,
+          );
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "apply_demangled_names": {
+        const parsed =
+          enhancedInputSchemas.apply_demangled_names.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
       case "get_objc_classes": {
         const parsed = enhancedInputSchemas.get_objc_classes.safeParse(input);
         return parsed.success
@@ -141,6 +159,14 @@ export class EnhancedTools {
           call.input.max_records,
           signal,
         );
+      case "inspect_native_dispatch_implementations":
+        return inspectNativeDispatchImplementations(
+          this.analysis,
+          call.input,
+          signal,
+        );
+      case "apply_demangled_names":
+        return applyDemangledNames(this.analysis, call.input, signal);
       case "get_objc_classes":
         return this.#objcClasses(call.input.pattern, signal);
       case "get_objc_protocols":

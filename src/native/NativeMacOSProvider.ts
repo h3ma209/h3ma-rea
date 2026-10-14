@@ -45,10 +45,7 @@ import { ProviderCleanupError } from "../domain/providerCleanupError.js";
 import { AnalysisError } from "../domain/analysisErrorBase.js";
 import { jsonValueSchema, type JsonValue } from "../domain/jsonValue.js";
 import type { NativeUiObservationResult } from "../domain/native/nativeUiObservation.js";
-import {
-  omittedPrototypeKeysLimitation,
-  parseXmlPropertyList,
-} from "../domain/propertyListKeys.js";
+import { omittedPrototypeKeysLimitation } from "../domain/propertyListKeys.js";
 import {
   demangleSwiftSchema,
   inspectPlistSchema,
@@ -71,7 +68,10 @@ import {
   verifySignatureTarget,
   type SignatureTargetBinding,
 } from "./SignatureTargetBinding.js";
-import { parseCodeSignature } from "./parsers/codesign.js";
+import {
+  parseCodeSignature,
+  parseEntitlements,
+} from "./parsers/codesign.js";
 import { parseDemangledSymbols } from "./parsers/demangle.js";
 import { parseLipoArchitectures } from "./parsers/lipo.js";
 import {
@@ -1060,18 +1060,6 @@ const invocation = (
   stdout_bytes: capture.stdoutBytes,
   stderr_bytes: capture.stderrBytes,
 });
-
-const parseEntitlements = (
-  output: string,
-): { readonly value: JsonValue; readonly omittedPrototypeKeys: number } => {
-  const start = output.indexOf("<?xml");
-  const end = output.lastIndexOf("</plist>");
-  if (start < 0 || end < start) return { value: null, omittedPrototypeKeys: 0 };
-  const { value, omittedPrototypeKeys } = parseXmlPropertyList(
-    output.slice(start, end + "</plist>".length),
-  );
-  return { value: jsonValueSchema.parse(value), omittedPrototypeKeys };
-};
 
 /**
  * Report a plist that cannot be decoded as the caller's selection, or as the

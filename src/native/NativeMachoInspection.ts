@@ -264,6 +264,9 @@ const normalizeMacho = (
     imports: covered(imports, false, [
       "dyld_info textual imports may omit chained or toolchain-unsupported metadata.",
     ]),
+    imports_by_source: covered(groupImportsBySource(imports), false, [
+      "Grouped from the same dyld_info import rows as imports; missing source remains a null group.",
+    ]),
     exports: covered(exports, false, [
       "Merged nm/dyld_info results may be incomplete for stripped binaries.",
     ]),
@@ -323,6 +326,29 @@ const covered = <Value>(
   exhaustive,
   limitations: [...limitations],
 });
+
+const groupImportsBySource = (
+  imports: readonly {
+    readonly name: string;
+    readonly source: string | null;
+  }[],
+) => {
+  const groups = new Map<string | null, string[]>();
+  for (const item of imports) {
+    const symbols = groups.get(item.source) ?? [];
+    symbols.push(item.name);
+    groups.set(item.source, symbols);
+  }
+  return [...groups.entries()]
+    .sort(([left], [right]) =>
+      compareUnicodeCodePoints(left ?? "", right ?? ""),
+    )
+    .map(([source, symbols]) => ({
+      source,
+      count: symbols.length,
+      symbols,
+    }));
+};
 
 const uniqueSymbols = <Value extends { readonly name: string }>(
   items: readonly Value[],
