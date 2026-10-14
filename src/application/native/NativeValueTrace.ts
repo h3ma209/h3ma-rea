@@ -13,6 +13,9 @@ import {
 import { err, ok } from "../../domain/result.js";
 import type { AnalysisOperationPort } from "../AnalysisProvider.js";
 import type { EnhancedResult } from "../EnhancedToolTypes.js";
+import { jsonParts } from "../../domain/jsonSerialization.js";
+
+const NODE_PAYLOAD_BYTES = 8 * 1024 * 1024;
 
 /** Compose bounded high-p-code def-use graphs across exactly referenced call destinations. */
 export const traceNativeValues = async (
@@ -22,7 +25,6 @@ export const traceNativeValues = async (
 ): EnhancedResult => {
   const input = nativeValueTraceInputSchema.parse(parameters);
   const nodes: typeof nativeValueTraceSchema._output.nodes = [];
-  const nodeIds = new Set<string>();
   const edges: typeof nativeValueTraceSchema._output.edges = [];
   const procedures: typeof nativeValueTraceSchema._output.procedures = [];
   const unknowns: typeof nativeValueTraceSchema._output.unknowns = [];
@@ -35,17 +37,46 @@ export const traceNativeValues = async (
     evidence_id: string;
   }[] = [];
   const pending = [{ procedure: input.procedure, depth: 0 }];
+  const attempted = new Set<string>();
   const visited = new Set<string>();
   let targetSha256: string | undefined;
   let truncated = false;
   let decompilations = 0;
   let callSites = 0;
   let bytes = 0;
+  let nodeBudgetReached = false;
+  const retainNode = (value: (typeof nodes)[number]): boolean => {
+    if (nodeBudgetReached) return false;
+    if (nodes.length >= input.max_nodes) {
+      truncated = true;
+      nodeBudgetReached = true;
+      return false;
+    }
+    let size = 0;
+    // Reuse bounded JSON encoding to count escapes and UTF-8 expansion
+    // before allocating a complete serialized node that might not fit.
+    for (const part of jsonParts(value)) {
+      size += Buffer.byteLength(part);
+      if (size > NODE_PAYLOAD_BYTES - bytes) {
+        truncated = true;
+        nodeBudgetReached = true;
+        return false;
+      }
+    }
+    bytes += size;
+    nodes.push(value);
+    return true;
+  };
   while (pending.length > 0) {
     if (signal?.aborted)
       return err(new AnalysisCancelledError("trace_native_values"));
     const next = pending.shift();
-    if (next === undefined || visited.has(next.procedure)) continue;
+    if (
+      next === undefined ||
+      attempted.has(next.procedure) ||
+      visited.has(next.procedure)
+    )
+      continue;
     if (decompilations >= input.max_functions) {
       truncated = true;
       unknowns.push({
@@ -55,6 +86,9 @@ export const traceNativeValues = async (
       });
       break;
     }
+    // An exact selector is attempted once per trace, even on failure. Only
+    // successful dossiers establish canonical procedure identity in visited.
+    attempted.add(next.procedure);
     const execution = await analysis.execute(
       "analyze_function",
       { procedure: next.procedure },
@@ -136,6 +170,10 @@ export const traceNativeValues = async (
       });
     }
     const ids = new Set<string>();
+    // Keep generated parameter identity independent of which operations fit
+    // the budget, while preserving every provider-supplied operation ID.
+    const operationIds = new Set(flow.operations.map(({ id }) => id));
+    const parameterIds = new Map<number, string>();
     const qualified = (id: string) => `${address}/${id}`;
     for (const operation of flow.operations) {
       if (
@@ -151,44 +189,37 @@ export const traceNativeValues = async (
         kind: "operation" as const,
         parameter: null,
       };
-      const size = Buffer.byteLength(JSON.stringify(node));
-      if (nodes.length >= input.max_nodes || bytes + size > 8 * 1024 * 1024) {
-        truncated = true;
-        break;
-      }
-      bytes += size;
+      if (!retainNode(node)) break;
       ids.add(operation.id);
-      nodes.push(node);
-      nodeIds.add(node.id);
     }
     for (const parameter of flow.parameters) {
-      if (nodes.length >= input.max_nodes) {
-        truncated = true;
+      const parameterId = `parameter:${parameter.ordinal}`;
+      let localId = parameterId;
+      for (let suffix = 1; operationIds.has(localId); suffix++)
+        localId = `${parameterId}#${suffix}`;
+      const id = qualified(localId);
+      if (
+        !retainNode({
+          id,
+          procedure: address,
+          evidence_id: evidenceId,
+          kind: "parameter",
+          operation: null,
+          parameter,
+        })
+      )
         break;
-      }
-      const id = `${address}/parameter:${parameter.ordinal}`;
-      nodes.push({
-        id,
-        procedure: address,
-        evidence_id: evidenceId,
-        kind: "parameter",
-        operation: null,
-        parameter,
-      });
-      nodeIds.add(id);
+      parameterIds.set(parameter.ordinal, id);
     }
     for (const use of flow.parameter_uses) {
-      if (
-        !ids.has(use.use) ||
-        !nodeIds.has(`${address}/parameter:${use.ordinal}`)
-      )
-        continue;
+      const source = parameterIds.get(use.ordinal);
+      if (!ids.has(use.use) || source === undefined) continue;
       if (edges.length >= input.max_edges) {
         truncated = true;
         break;
       }
       edges.push({
-        source: `${address}/parameter:${use.ordinal}`,
+        source,
         target: qualified(use.use),
         input_index: use.input_index,
         kind: "parameter-use",
@@ -212,94 +243,97 @@ export const traceNativeValues = async (
       });
     }
     if (input.address === undefined)
-    for (const operation of flow.operations) {
-      if (
-        !ids.has(operation.id) ||
-        !["CALL", "CALLIND"].includes(operation.opcode)
-      )
-        continue;
-      if (callSites >= input.max_call_sites) {
-        truncated = true;
-        unknowns.push({
-          procedure: address,
-          address: operation.address,
-          reason: "Call-site resolution budget reached",
-        });
-        break;
-      }
-      callSites++;
-      const resolved = await analysis.execute(
-        "resolve_native_call_targets",
-        { address: operation.address },
-        signal === undefined ? {} : { signal },
-      );
-      if (!resolved.ok) {
-        if (resolved.error._tag === "AnalysisCancelledError")
-          return err(resolved.error);
-        unknowns.push({
-          procedure: address,
-          address: operation.address,
-          reason: resolved.error.message,
-        });
-        continue;
-      }
-      const targets = nativeCallTargetsSchema.safeParse(resolved.value.result);
-      if (!targets.success)
-        return err(
-          new AnalysisOutputError(
-            "resolve_native_call_targets",
-            "Invalid static call resolution",
-          ),
-        );
-      if (targets.data.targets.length === 0)
-        unknowns.push({
-          procedure: address,
-          address: operation.address,
-          reason: `Call target ${targets.data.status}`,
-        });
-      for (const target of targets.data.targets) {
-        if (edges.length >= input.max_edges) {
-          truncated = true;
-          break;
-        }
-        const destination = target.procedure ?? target.address;
-        edges.push({
-          source: qualified(operation.id),
-          target: destination,
-          input_index: null,
-          kind: "call",
-          status: target.status,
-          evidence_id: evidenceId,
-        });
-        if (target.status !== "candidate")
-          callBindings.push({
-            caller: address,
-            callee: destination,
-            call: qualified(operation.id),
-            argument_count: Math.max(0, operation.inputs.length - 1),
-            output: operation.output !== null,
-            evidence_id: evidenceId,
-          });
-        if (next.depth < input.max_depth && target.status !== "candidate")
-          pending.push({ procedure: destination, depth: next.depth + 1 });
-        else if (!visited.has(destination)) {
+      for (const operation of flow.operations) {
+        if (
+          !ids.has(operation.id) ||
+          !["CALL", "CALLIND"].includes(operation.opcode)
+        )
+          continue;
+        if (callSites >= input.max_call_sites) {
           truncated = true;
           unknowns.push({
             procedure: address,
             address: operation.address,
-            reason:
-              target.status === "candidate"
-                ? "Ambiguous call candidates were not traversed"
-                : "Call depth budget reached",
+            reason: "Call-site resolution budget reached",
           });
+          break;
+        }
+        callSites++;
+        const resolved = await analysis.execute(
+          "resolve_native_call_targets",
+          { address: operation.address },
+          signal === undefined ? {} : { signal },
+        );
+        if (!resolved.ok) {
+          if (resolved.error._tag === "AnalysisCancelledError")
+            return err(resolved.error);
+          unknowns.push({
+            procedure: address,
+            address: operation.address,
+            reason: resolved.error.message,
+          });
+          continue;
+        }
+        const targets = nativeCallTargetsSchema.safeParse(
+          resolved.value.result,
+        );
+        if (!targets.success)
+          return err(
+            new AnalysisOutputError(
+              "resolve_native_call_targets",
+              "Invalid static call resolution",
+            ),
+          );
+        if (targets.data.targets.length === 0)
+          unknowns.push({
+            procedure: address,
+            address: operation.address,
+            reason: `Call target ${targets.data.status}`,
+          });
+        for (const target of targets.data.targets) {
+          if (edges.length >= input.max_edges) {
+            truncated = true;
+            break;
+          }
+          const destination = target.procedure ?? target.address;
+          edges.push({
+            source: qualified(operation.id),
+            target: destination,
+            input_index: null,
+            kind: "call",
+            status: target.status,
+            evidence_id: evidenceId,
+          });
+          if (target.status !== "candidate")
+            callBindings.push({
+              caller: address,
+              callee: destination,
+              call: qualified(operation.id),
+              argument_count: Math.max(0, operation.inputs.length - 1),
+              output: operation.output !== null,
+              evidence_id: evidenceId,
+            });
+          if (next.depth < input.max_depth && target.status !== "candidate")
+            pending.push({ procedure: destination, depth: next.depth + 1 });
+          else if (!visited.has(destination)) {
+            truncated = true;
+            unknowns.push({
+              procedure: address,
+              address: operation.address,
+              reason:
+                target.status === "candidate"
+                  ? "Ambiguous call candidates were not traversed"
+                  : "Call depth budget reached",
+            });
+          }
         }
       }
-    }
     if (
       truncated &&
-      (nodes.length >= input.max_nodes ||
+      (nodeBudgetReached ||
+        nodes.length >= input.max_nodes ||
         edges.length >= input.max_edges ||
-        bytes >= 8 * 1024 * 1024)
+        bytes >= NODE_PAYLOAD_BYTES)
     )
       break;
   }
