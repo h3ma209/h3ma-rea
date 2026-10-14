@@ -239,6 +239,9 @@ forms remain unknown.
 
 `trace_native_values` / `rea trace-native-values <binary> <procedure> --provider
  ghidra` composes high-p-code def-use graphs across statically resolved calls.
+`--address` with `--direction forward|backward` stays inside that procedure and
+walks uses or definitions of the p-code at that address. Omitting `--address`
+keeps the procedure-seeded forward walk.
 Logical CALL arguments bind to recovered parameter ordinals; recovered RETURN
 values bind to CALL outputs. These edges are decompiler-derived. Constants,
 operators, LOAD/STORE and branch operands are included inline. Alias effects,
@@ -254,6 +257,23 @@ The raw Java `is_dead` flag can remain set after Ghidra decodes a live block;
 The provider dossier itself retains up to 3,000 p-code operations, 64 inputs per
 operation and 12,000 def-use edges, with explicit omitted counts. A `STORE`
 may describe stack memory and does not itself prove persistent state.
+
+`resolve_function_calls` resolves every call site in one procedure. Provider
+references stay separate from an Objective-C selector join and from a Swift
+witness or vtable slot. Unresolved and ambiguous sites stay unknown.
+
+`inspect_native_regions` asks the decompiler to structure the HighFunction
+block graph. Listing basic blocks are not used. A block without an if, loop,
+or switch parent stays unstructured.
+
+`evaluate_native_pcode` steps the Ghidra p-code emulator inside one procedure
+up to `max_steps`. An unresolved register, alias, computed call, or address
+outside the loaded image stops evaluation with an explicit unknown. It does
+not launch the target or write the session database.
+
+`apply_objc_signatures` plans Ghidra signatures from Objective-C method type
+encodings. Application is off until `--apply` is set. Unsupported encodings
+are invalid and are not written.
 
 Jump-table evidence keeps numeric `mappings`, explicit `default_targets`, and
 backing `data_sources` separate. A null case value denotes an unresolved

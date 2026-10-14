@@ -14,6 +14,10 @@ import { nativeFunctionAnnotationsSchema } from "../domain/native/nativeFunction
 import { nativeMemorySearchSchema } from "../domain/native/nativeMemorySearch.js";
 import { nativeDispatchImplementationMapSchema } from "../domain/native/nativeDispatchImplementationMap.js";
 import { applyDemangledNamesSchema } from "../domain/native/demangledNames.js";
+import { applyObjcSignaturesSchema } from "../domain/native/objcSignatures.js";
+import { functionCallResolutionSchema } from "../domain/native/functionCallResolution.js";
+import { nativeControlRegionsSchema } from "../domain/native/nativeControlRegions.js";
+import { nativePcodeEvaluationSchema } from "../domain/native/nativePcodeEvaluation.js";
 import { nativeLoadImageSchema } from "../domain/native/nativeLoadImage.js";
 import { nativeUiResultSchema } from "../domain/native/nativeUiObservation.js";
 import { nativeValueTraceSchema } from "../domain/native/nativeValueTrace.js";
@@ -116,6 +120,8 @@ export const officialOutputSchemas: Readonly<Record<string, z.ZodObject>> = {
   inspect_native_data_type: evidenceResultOf(nativeDataTypeSchema),
   inspect_native_instruction: evidenceResultOf(nativeInstructionSchema),
   resolve_native_call_targets: evidenceResultOf(nativeCallTargetsSchema),
+  inspect_native_regions: evidenceResultOf(nativeControlRegionsSchema),
+  evaluate_native_pcode: evidenceResultOf(nativePcodeEvaluationSchema),
   address_name: evidenceResultOf(nullableText),
   comment: evidenceResultOf(nullableText),
   current_address: evidenceResultOf(z.string()),
@@ -286,6 +292,8 @@ export const enhancedOutputSchemas: Readonly<Record<string, z.ZodObject>> = {
     nativeDispatchImplementationMapSchema,
   ),
   apply_demangled_names: evidenceResultOf(applyDemangledNamesSchema),
+  apply_objc_signatures: evidenceResultOf(applyObjcSignaturesSchema),
+  resolve_function_calls: evidenceResultOf(functionCallResolutionSchema),
   trace_native_values: evidenceResultOf(nativeValueTraceSchema),
   trace_native_ui_action: evidenceResultOf(nativeInvestigationTraceSchema),
   get_objc_classes: symbolDiscoveryOutput("classes"),

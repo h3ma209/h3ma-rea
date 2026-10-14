@@ -152,12 +152,25 @@ export const decodeObjcDispatchFacets = (input: {
       }
       const selector = read.string(selectorAddress);
       selectors.push(selector);
+      let typeEncoding: string | null = null;
+      try {
+        const typesAddress = relative
+          ? rel(entry + 4n)
+          : read.pointer(entry + 8n);
+        if (typesAddress !== 0n) typeEncoding = read.string(typesAddress);
+      } catch (cause: unknown) {
+        // A missing types pointer leaves the encoding explicit and keeps the IMP.
+        void cause;
+        typeEncoding = null;
+      }
       result.objc_dispatch_implementations.push({
         class_name: className,
         selector,
         method_type: methodType,
         ...(category === undefined ? {} : { category }),
         implementation_address: implementationLocation?.address ?? null,
+        selector_address: hex(selectorAddress),
+        type_encoding: typeEncoding,
         location: read.location(entry),
         decode:
           implementationLocation === null

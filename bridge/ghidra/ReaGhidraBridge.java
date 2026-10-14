@@ -153,6 +153,8 @@ public final class ReaGhidraBridge extends HeadlessScript {
         "inspect_native_instruction",
         "inspect_native_data_type",
         "resolve_native_call_targets",
+        "inspect_native_regions",
+        "evaluate_native_pcode",
         "procedure_references",
         "xrefs"
     };
@@ -389,6 +391,8 @@ public final class ReaGhidraBridge extends HeadlessScript {
             case "inspect_native_data_type" -> inspectNativeDataType(request.params);
             case "inspect_native_instruction" -> inspectNativeInstruction(request.params, true);
             case "resolve_native_call_targets" -> resolveNativeCallTargets(request.params);
+            case "inspect_native_regions" -> inspectNativeRegions(request.params);
+            case "evaluate_native_pcode" -> evaluateNativePcode(request.params);
             case "xrefs" -> xrefs(request.params);
             case "analyze_function" -> {
                 FunctionAnalysisObservation observation = analyzeFunctionObservation(request.params);
@@ -1133,6 +1137,324 @@ public final class ReaGhidraBridge extends HeadlessScript {
         result.add("targets", targets);
         result.add("limitations", GSON.toJsonTree(List.of("Targets are static Ghidra ReferenceManager call-reference observations. Computed calls without call references remain unresolved; a resolved reference is not proof of runtime execution.", "Objective-C, Swift, vtable and closure mechanisms are not identified by this reference-only boundary.")));
         return result;
+    }
+
+    private JsonObject inspectNativeRegions(JsonObject params) throws Exception {
+        requireKeys(params, Set.of("document", "procedure"));
+        requireDocument(params);
+        Function function = resolveProcedure(requireString(params, "procedure"));
+        DecompileResults decompilation = decompile(function);
+        HighFunction highFunction =
+            decompilation == null ? null : decompilation.getHighFunction();
+        JsonObject result = new JsonObject();
+        result.addProperty("procedure", canonicalAddress(function.getEntryPoint()));
+        JsonArray regions = new JsonArray();
+        JsonArray limitations = new JsonArray();
+        if (highFunction == null) {
+            limitations.add("Ghidra has no HighFunction p-code model for this procedure");
+            result.add("regions", regions);
+            result.add("limitations", limitations);
+            return result;
+        }
+        ghidra.program.model.pcode.BlockGraph ingraph =
+            new ghidra.program.model.pcode.BlockGraph();
+        java.util.IdentityHashMap<PcodeBlockBasic, ghidra.program.model.pcode.BlockCopy> copies =
+            new java.util.IdentityHashMap<>();
+        for (PcodeBlockBasic block : highFunction.getBasicBlocks()) {
+            ghidra.program.model.pcode.BlockCopy copy =
+                new ghidra.program.model.pcode.BlockCopy(block, block.getStart());
+            copies.put(block, copy);
+            ingraph.addBlock(copy);
+        }
+        for (PcodeBlockBasic block : highFunction.getBasicBlocks()) {
+            ghidra.program.model.pcode.BlockCopy source = copies.get(block);
+            for (int index = 0; index < block.getOutSize(); index++) {
+                if (!(block.getOut(index) instanceof PcodeBlockBasic destination)) continue;
+                ghidra.program.model.pcode.BlockCopy target = copies.get(destination);
+                if (target != null) ingraph.addEdge(source, target);
+            }
+        }
+        ingraph.setIndices();
+        ghidra.program.model.pcode.BlockGraph structured = decompiler.structureGraph(ingraph, 0, monitor);
+        if (structured == null || structured.getSize() == 0) {
+            for (PcodeBlockBasic block : highFunction.getBasicBlocks())
+                regions.add(unstructuredRegion(block));
+            limitations.add("Ghidra did not structure the HighFunction block graph.");
+        } else {
+            collectRegions(structured, false, regions, new java.util.IdentityHashMap<>());
+        }
+        for (JsonElement item : regions) {
+            if (item.isJsonObject() &&
+                "unstructured".equals(item.getAsJsonObject().get("kind").getAsString())) {
+                limitations.add("At least one basic block has no structured decompiler parent.");
+                break;
+            }
+        }
+        result.add("regions", regions);
+        result.add("limitations", limitations);
+        return result;
+    }
+
+    private void collectRegions(
+        PcodeBlock block,
+        boolean covered,
+        JsonArray regions,
+        java.util.IdentityHashMap<PcodeBlock, Boolean> seen
+    ) {
+        String kind = regionKind(block);
+        boolean structured = kind != null;
+        if (structured && seen.put(block, Boolean.TRUE) == null)
+            regions.add(regionValue(block, kind));
+        boolean next = covered || structured;
+        if (block instanceof ghidra.program.model.pcode.BlockGraph graph) {
+            for (int index = 0; index < graph.getSize(); index++)
+                collectRegions(graph.getBlock(index), next, regions, seen);
+            return;
+        }
+        if (!next) regions.add(unstructuredRegion(block));
+    }
+
+    private String regionKind(PcodeBlock block) {
+        String name = PcodeBlock.typeToName(block.getType()).toLowerCase(Locale.ROOT);
+        return switch (name) {
+            case "properif", "ifelse", "ifgoto", "condition" -> "if";
+            case "whiledo", "dowhile", "infloop" -> "loop";
+            case "switch" -> "switch";
+            default -> null;
+        };
+    }
+
+    private JsonObject regionValue(PcodeBlock block, String kind) {
+        JsonObject region = new JsonObject();
+        region.addProperty("kind", kind);
+        region.add("start", addressJson(blockStart(block)));
+        region.add("stop", addressJson(blockStop(block)));
+        PcodeBlock condition = block.getType() == PcodeBlock.CONDITION ? block : null;
+        JsonArray children = new JsonArray();
+        if (block instanceof ghidra.program.model.pcode.BlockGraph graph) {
+            for (int index = 0; index < graph.getSize(); index++) {
+                PcodeBlock child = graph.getBlock(index);
+                if (condition == null && child.getType() == PcodeBlock.CONDITION)
+                    condition = child;
+                if (block.getType() == PcodeBlock.SWITCH) {
+                    JsonObject item = new JsonObject();
+                    item.add("start", addressJson(blockStart(child)));
+                    item.add("stop", addressJson(blockStop(child)));
+                    children.add(item);
+                }
+            }
+        }
+        PcodeBlock branch = condition == null ? block : condition;
+        region.add("condition", condition == null ? JsonNull.INSTANCE : addressJson(blockStart(condition)));
+        region.add("true_exit", blockExit(branch, true));
+        region.add("false_exit", blockExit(branch, false));
+        region.add("children", children);
+        region.add("reason", JsonNull.INSTANCE);
+        return region;
+    }
+
+    private JsonElement blockExit(PcodeBlock block, boolean trueExit) {
+        try {
+            PcodeBlock destination = trueExit ? block.getTrueOut() : block.getFalseOut();
+            return destination == null ? JsonNull.INSTANCE : addressJson(blockStart(destination));
+        } catch (RuntimeException exception) {
+            return JsonNull.INSTANCE;
+        }
+    }
+
+    private Address blockStart(PcodeBlock block) {
+        return extremeAddress(block, true);
+    }
+
+    private Address blockStop(PcodeBlock block) {
+        return extremeAddress(block, false);
+    }
+
+    private Address extremeAddress(PcodeBlock block, boolean start) {
+        PcodeBlockBasic basic = referencedBasicBlock(block);
+        if (basic != null) return programAddress(start ? basic.getStart() : basic.getStop());
+        if (block instanceof ghidra.program.model.pcode.BlockGraph graph) {
+            Address best = null;
+            for (int index = 0; index < graph.getSize(); index++) {
+                Address candidate = extremeAddress(graph.getBlock(index), start);
+                if (candidate == null) continue;
+                if (best == null || (start ? candidate.compareTo(best) < 0 : candidate.compareTo(best) > 0))
+                    best = candidate;
+            }
+            if (best != null) return best;
+        }
+        return programAddress(start ? block.getStart() : block.getStop());
+    }
+
+    private Address programAddress(Address address) {
+        if (address == null || sessionDefaultAddressSpace == null ||
+            !address.getAddressSpace().equals(sessionDefaultAddressSpace)) return null;
+        return address;
+    }
+
+    private PcodeBlockBasic referencedBasicBlock(PcodeBlock block) {
+        if (block instanceof PcodeBlockBasic basic) return basic;
+        if (block instanceof ghidra.program.model.pcode.BlockCopy copy &&
+            copy.getRef() instanceof PcodeBlockBasic basic) return basic;
+        return null;
+    }
+
+    private JsonObject unstructuredRegion(PcodeBlock block) {
+        JsonObject region = new JsonObject();
+        region.addProperty("kind", "unstructured");
+        region.add("start", addressJson(blockStart(block)));
+        region.add("stop", addressJson(blockStop(block)));
+        region.add("condition", JsonNull.INSTANCE);
+        region.add("true_exit", JsonNull.INSTANCE);
+        region.add("false_exit", JsonNull.INSTANCE);
+        region.add("children", new JsonArray());
+        region.addProperty(
+            "reason",
+            "Decompiler parent is absent or not a structured if, loop, or switch"
+        );
+        return region;
+    }
+
+    private JsonElement addressJson(Address address) {
+        return address == null ? JsonNull.INSTANCE : GSON.toJsonTree(canonicalAddress(address));
+    }
+
+    private JsonObject evaluateNativePcode(JsonObject params) throws Exception {
+        requireKeys(params, Set.of("document", "procedure", "address", "max_steps"));
+        requireDocument(params);
+        Function function = resolveProcedure(requireString(params, "procedure"));
+        Address start = params.has("address") && !params.get("address").isJsonNull()
+            ? requireAddress(params, "address")
+            : function.getEntryPoint();
+        if (!function.getBody().contains(start) && !start.equals(function.getEntryPoint()))
+            throw new RequestFailure("invalid_request", "Start address is outside the procedure");
+        int maxSteps = requireBoundedInteger(params, "max_steps", 1, 10_000);
+        ghidra.pcode.emu.PcodeEmulator emulator =
+            new ghidra.pcode.emu.PcodeEmulator(currentProgram.getLanguage());
+        seedEmulatorMemory(emulator);
+        ghidra.pcode.emu.PcodeThread<byte[]> thread = emulator.newThread();
+        thread.overrideContextWithDefault();
+        thread.setCounter(start);
+        int steps = 0;
+        String unknown = null;
+        JsonArray values = new JsonArray();
+        JsonArray limitations = new JsonArray();
+        limitations.add(
+            "Evaluation runs lifted p-code in the Ghidra emulator. It does not launch the target or write program bytes or the session database."
+        );
+        while (steps < maxSteps && unknown == null) {
+            monitor.checkCancelled();
+            Address counter = thread.getCounter();
+            if (counter == null || !function.getBody().contains(counter)) {
+                unknown = "execution left the procedure";
+                break;
+            }
+            Instruction instruction = currentProgram.getListing().getInstructionAt(counter);
+            if (instruction == null) {
+                unknown = "undecodable instruction";
+                break;
+            }
+            if (instruction.getFlowType().isCall() && instruction.getFlowType().isComputed()) {
+                unknown = "computed call";
+                break;
+            }
+            try {
+                thread.stepInstruction();
+            } catch (RuntimeException exception) {
+                unknown = evaluationUnknownReason(exception);
+                break;
+            }
+            steps++;
+            values.add(evaluatedValue(thread, instruction));
+        }
+        if (unknown == null && steps >= maxSteps)
+            unknown = "step budget max_steps was reached";
+        JsonObject result = new JsonObject();
+        result.addProperty("procedure", canonicalAddress(function.getEntryPoint()));
+        result.addProperty("start", canonicalAddress(start));
+        result.addProperty("steps", steps);
+        result.add("values", values);
+        result.add("unknown", unknown == null ? JsonNull.INSTANCE : GSON.toJsonTree(unknown));
+        result.add("limitations", limitations);
+        return result;
+    }
+
+    private void seedEmulatorMemory(ghidra.pcode.emu.PcodeEmulator emulator) {
+        ghidra.pcode.exec.PcodeExecutorState<byte[]> state = emulator.getSharedState();
+        for (ghidra.program.model.mem.MemoryBlock block : currentProgram.getMemory().getBlocks()) {
+            if (!block.isInitialized() || block.getSize() <= 0 || block.getSize() > 256L * 1024L * 1024L)
+                continue;
+            long remaining = block.getSize();
+            Address address = block.getStart();
+            while (remaining > 0) {
+                int chunk = (int) Math.min(remaining, 65_536);
+                byte[] bytes = new byte[chunk];
+                try {
+                    block.getBytes(address, bytes);
+                    state.setConcrete(address, bytes);
+                    remaining -= chunk;
+                    if (remaining == 0) break;
+                    address = address.addNoWrap(chunk);
+                } catch (
+                    RuntimeException |
+                    ghidra.program.model.mem.MemoryAccessException |
+                    ghidra.program.model.address.AddressOverflowException exception
+                ) {
+                    break;
+                }
+            }
+        }
+    }
+
+    private JsonObject evaluatedValue(
+        ghidra.pcode.emu.PcodeThread<byte[]> thread,
+        Instruction instruction
+    ) {
+        JsonObject value = new JsonObject();
+        value.addProperty("address", canonicalAddress(instruction.getAddress()));
+        ghidra.program.model.lang.Register register = null;
+        for (int operand = 0; operand < instruction.getNumOperands(); operand++) {
+            ghidra.program.model.lang.Register candidate = instruction.getRegister(operand);
+            if (candidate != null) {
+                register = candidate;
+                break;
+            }
+        }
+        if (register == null) {
+            value.add("register", JsonNull.INSTANCE);
+            value.add("hex", JsonNull.INSTANCE);
+            return value;
+        }
+        value.addProperty("register", register.getName());
+        try {
+            byte[] raw = thread.getState().getVar(
+                register,
+                ghidra.pcode.exec.PcodeExecutorStatePiece.Reason.INSPECT
+            );
+            value.add("hex", raw == null ? JsonNull.INSTANCE : GSON.toJsonTree(bytesToHex(raw)));
+        } catch (RuntimeException exception) {
+            value.add("hex", JsonNull.INSTANCE);
+        }
+        return value;
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder hex = new StringBuilder();
+        for (byte value : bytes) hex.append(String.format("%02x", value & 0xff));
+        return hex.toString();
+    }
+
+    private String evaluationUnknownReason(RuntimeException exception) {
+        String message = exception.getMessage() == null
+            ? exception.getClass().getSimpleName()
+            : exception.getMessage();
+        String lower = message.toLowerCase(Locale.ROOT);
+        if (lower.contains("register")) return "unresolved register";
+        if (lower.contains("alias") || lower.contains("indirect")) return "unresolved alias";
+        if (lower.contains("call")) return "computed call";
+        if (lower.contains("memory") || lower.contains("unmapped") || lower.contains("address"))
+            return "memory outside the loaded image";
+        return message;
     }
 
     private JsonArray xrefs(JsonObject params) throws Exception {

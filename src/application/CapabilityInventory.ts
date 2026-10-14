@@ -111,6 +111,12 @@ const ENHANCED_REQUIREMENTS: Readonly<Record<string, readonly string[]>> = {
     "resolve_containing_procedure",
   ],
   apply_demangled_names: ["list_names", "demangle_swift", "set_addresses_names"],
+  apply_objc_signatures: [
+    "inspect_native_dispatch_metadata",
+    "resolve_containing_procedure",
+    "annotate_native_function",
+  ],
+  resolve_function_calls: ["analyze_function", "resolve_native_call_targets"],
   get_objc_classes: ["list_names"],
   get_objc_protocols: ["list_names"],
   batch_decompile: ["procedure_pseudo_code"],

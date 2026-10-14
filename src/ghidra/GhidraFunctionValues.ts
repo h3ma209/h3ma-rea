@@ -8,6 +8,8 @@ import {
   nativeInstructionSchema,
   nativeCallTargetsSchema,
 } from "../domain/native/nativeInstruction.js";
+import { nativeControlRegionsSchema } from "../domain/native/nativeControlRegions.js";
+import { nativePcodeEvaluationSchema } from "../domain/native/nativePcodeEvaluation.js";
 
 import {
   type AnalysisInputError,
@@ -44,6 +46,8 @@ export const GHIDRA_FUNCTION_OPERATIONS = [
   "inspect_native_data_type",
   "inspect_native_instruction",
   "resolve_native_call_targets",
+  "inspect_native_regions",
+  "evaluate_native_pcode",
   "analyze_function",
   "procedure_assembly",
   "procedure_callees",
@@ -88,6 +92,14 @@ const inputSchemas = {
     .strict(),
   resolve_native_call_targets: z
     .object({ document, address: ghidraInputAddressSchema })
+    .strict(),
+  inspect_native_regions: z.object(directProcedure).strict(),
+  evaluate_native_pcode: z
+    .object({
+      ...directProcedure,
+      address: ghidraInputAddressSchema.nullable().default(null),
+      max_steps: z.number().int().min(1).max(10_000).default(256),
+    })
     .strict(),
   analyze_function: z.object({ procedure }).strict(),
   procedure_assembly: z.object(directProcedure).strict(),
@@ -384,6 +396,8 @@ const resultSchemas = {
   inspect_native_instruction: nativeInstructionSchema,
   inspect_native_data_type: nativeDataTypeSchema,
   resolve_native_call_targets: nativeCallTargetsSchema,
+  inspect_native_regions: nativeControlRegionsSchema,
+  evaluate_native_pcode: nativePcodeEvaluationSchema,
   procedure_references: procedureReferences,
   xrefs: z.array(ghidraCanonicalAddressSchema),
 } satisfies Readonly<Record<GhidraFunctionOperation, z.ZodType>>;

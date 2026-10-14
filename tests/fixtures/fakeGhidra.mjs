@@ -246,6 +246,8 @@ const sessionInfo = ({
     "inspect_native_data_type",
     "inspect_native_instruction",
     "resolve_native_call_targets",
+    "inspect_native_regions",
+    "evaluate_native_pcode",
     "analyze_function",
     "procedure_assembly",
     "procedure_callees",
@@ -298,6 +300,37 @@ const inventoryResultFor = (method) => {
       return [stringSearchItem()];
     case "search_native_memory":
       return memorySearchResult();
+    case "inspect_native_regions":
+      return {
+        procedure: "0x1000",
+        regions: [
+          {
+            kind: "unstructured",
+            start: "0x1000",
+            stop: "0x1004",
+            condition: null,
+            true_exit: null,
+            false_exit: null,
+            children: [],
+            reason:
+              "Decompiler parent is absent or not a structured if, loop, or switch",
+          },
+        ],
+        limitations: [
+          "At least one basic block has no structured decompiler parent.",
+        ],
+      };
+    case "evaluate_native_pcode":
+      return {
+        procedure: "0x1000",
+        start: "0x1000",
+        steps: 0,
+        values: [],
+        unknown: "step budget max_steps was reached",
+        limitations: [
+          "Evaluation runs lifted p-code in the Ghidra emulator. It does not launch the target or write program bytes or the session database.",
+        ],
+      };
     default:
       return undefined;
   }

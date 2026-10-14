@@ -157,6 +157,10 @@ export const objcDispatchImplementationSchema = z.strictObject({
   selector: z.string().min(1),
   method_type: z.enum(["instance", "class"]),
   implementation_address: z.string().nullable(),
+  /** Address of the selector name string, when the method list provided one. */
+  selector_address: z.string().nullable().default(null),
+  /** Objective-C method type encoding, or null when the types pointer was absent. */
+  type_encoding: z.string().nullable().default(null),
   /** Category that adds this method, when it is not defined by the class itself. */
   category: z.string().nullable().optional(),
   location: nativeMetadataLocationSchema,
@@ -359,6 +363,8 @@ export const inspectNativeDispatchMetadata = (
         selector,
         method_type: methodType,
         implementation_address: entry.address,
+        selector_address: null,
+        type_encoding: null,
         location: { address: entry.address, file_offset: null },
         decode: { status: "partial", reason: "symbol_name_only" },
         evidence: symbolEvidence(entry.name, entry.address),

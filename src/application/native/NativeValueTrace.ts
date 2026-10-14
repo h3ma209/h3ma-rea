@@ -3,6 +3,7 @@ import { nativeCallTargetsSchema } from "../../domain/native/nativeInstruction.j
 import {
   nativeValueTraceInputSchema,
   nativeValueTraceSchema,
+  sliceNativeValueGraph,
 } from "../../domain/native/nativeValueTrace.js";
 import { createEvidence } from "../../domain/evidence.js";
 import {
@@ -210,6 +211,7 @@ export const traceNativeValues = async (
         evidence_id: evidenceId,
       });
     }
+    if (input.address === undefined)
     for (const operation of flow.operations) {
       if (
         !ids.has(operation.id) ||
@@ -308,6 +310,22 @@ export const traceNativeValues = async (
         "No seed function could be analyzed",
       ),
     );
+  if (input.address !== undefined) {
+    const sliced = sliceNativeValueGraph(
+      nodes,
+      edges,
+      input.address,
+      input.direction,
+    );
+    nodes.splice(0, nodes.length, ...sliced.nodes);
+    edges.splice(0, edges.length, ...sliced.edges);
+    if (!sliced.matched)
+      unknowns.push({
+        procedure: input.procedure,
+        address: input.address,
+        reason: "No p-code operation at the requested address",
+      });
+  }
   const parametersByProcedure = new Map<string, typeof nodes>();
   const returnsByProcedure = new Map<string, typeof nodes>();
   for (const node of nodes) {
@@ -392,6 +410,11 @@ export const traceNativeValues = async (
       "Static decompiler def-use graphs cover recovered block members; when membership is unavailable they exclude operations marked dead. Logical CALL argument positions bind to recovered HighParam ordinals and RETURN values bind to recovered CALL outputs; these are decompiler-derived dependencies, not original source or runtime observations. Missing parameters, variadic arguments and alias dependencies remain unknown.",
       "LOAD and STORE are memory operations; object fields, persistent state and RNG semantics are not inferred from names or pseudocode.",
       "Traversal caps depth, decompilations, call-site resolutions, nodes, edges and node payloads (8 MiB). Complete serialized output is bounded to 32 MiB. Pagination reruns analysis and returns edges whose source is on the node page; endpoints outside the page retain stable identities.",
+      ...(input.address === undefined
+        ? []
+        : [
+            `Interior address stayed inside the seed procedure and was traced ${input.direction}.`,
+          ]),
     ],
   });
   if (Buffer.byteLength(JSON.stringify(result)) > 32 * 1024 * 1024)

@@ -64,6 +64,8 @@ export const registerEnhancedTools = (
     "inspect_native_dispatch_implementations",
   );
   const applyDemangledNames = toolContract("apply_demangled_names");
+  const applyObjcSignatures = toolContract("apply_objc_signatures");
+  const resolveFunctionCalls = toolContract("resolve_function_calls");
   const objcClasses = toolContract("get_objc_classes");
   const objcProtocols = toolContract("get_objc_protocols");
   const batchDecompile = toolContract("batch_decompile");
@@ -113,6 +115,24 @@ export const registerEnhancedTools = (
     (input, context) =>
       executeEnhancedTool(registration, applyDemangledNames, {
         validatedCall: { name: "apply_demangled_names", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    applyObjcSignatures.name,
+    toolRegistrationOptions(applyObjcSignatures),
+    (input, context) =>
+      executeEnhancedTool(registration, applyObjcSignatures, {
+        validatedCall: { name: "apply_objc_signatures", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    resolveFunctionCalls.name,
+    toolRegistrationOptions(resolveFunctionCalls),
+    (input, context) =>
+      executeEnhancedTool(registration, resolveFunctionCalls, {
+        validatedCall: { name: "resolve_function_calls", input },
         context,
       }),
   );

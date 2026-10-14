@@ -52,6 +52,80 @@ async function inventoryCall(client, operation, parameters) {
   return parsed.value;
 }
 
+function assertProgramRegionAddresses(regions) {
+  for (const region of regions.regions) {
+    for (const field of [
+      "start",
+      "stop",
+      "condition",
+      "true_exit",
+      "false_exit",
+    ]) {
+      const value = region[field];
+      if (value !== null && !/^0x[0-9a-f]+$/u.test(value))
+        throw new Error(
+          `Ghidra region address drifted: ${JSON.stringify(region)}`,
+        );
+    }
+  }
+}
+
+async function verifyFunctionLogic(client, { branch, switchProcedure, leaf }) {
+  const branchRegions = await functionCall(client, "inspect_native_regions", {
+    document: null,
+    procedure: branch.address,
+  });
+  const switchRegions = await functionCall(client, "inspect_native_regions", {
+    document: null,
+    procedure: switchProcedure.address,
+  });
+  const evaluation = await functionCall(client, "evaluate_native_pcode", {
+    document: null,
+    procedure: leaf.address,
+    address: null,
+    max_steps: 16,
+  });
+  if (
+    branchRegions.procedure !== branch.address ||
+    !branchRegions.regions.some((region) => region.kind === "if")
+  )
+    throw new Error(
+      `Ghidra branch regions missed a structured if: ${JSON.stringify(branchRegions)}`,
+    );
+  // The debug fixture is -O0, so this switch lowers to a compare chain.
+  if (
+    switchRegions.procedure !== switchProcedure.address ||
+    !switchRegions.regions.some(
+      (region) => region.kind === "if" || region.kind === "switch",
+    )
+  )
+    throw new Error(
+      `Ghidra switch procedure missed structured control: ${JSON.stringify(switchRegions)}`,
+    );
+  assertProgramRegionAddresses(branchRegions);
+  assertProgramRegionAddresses(switchRegions);
+  if (
+    evaluation.procedure !== leaf.address ||
+    evaluation.start !== leaf.address ||
+    evaluation.steps < 0 ||
+    evaluation.steps > 16 ||
+    typeof evaluation.unknown !== "string" ||
+    evaluation.unknown.length === 0 ||
+    !evaluation.limitations.some((limitation) =>
+      limitation.includes("does not launch the target"),
+    )
+  )
+    throw new Error(
+      `Ghidra p-code evaluation drifted: ${JSON.stringify(evaluation)}`,
+    );
+  return {
+    branch_regions: branchRegions.regions.map((region) => region.kind),
+    switch_regions: switchRegions.regions.map((region) => region.kind),
+    evaluation_steps: evaluation.steps,
+    evaluation_unknown: evaluation.unknown,
+  };
+}
+
 export async function verifyDebugFunctionOperations(
   client,
   { procedures, strings, entry },
@@ -218,6 +292,7 @@ export async function verifyDebugFunctionOperations(
     requireMultiBlock: true,
   });
   assertIndirectDossier(indirectDossier, leaf.address);
+  const logic = await verifyFunctionLogic(client, { branch, switchProcedure, leaf });
 
   const { cancellation, timeout } = await verifyRequestCancellationAndTimeout(
     client,
@@ -236,6 +311,7 @@ export async function verifyDebugFunctionOperations(
     },
     terminal_call_limitations: terminalLimitations,
     returning_call_limitations: returningObservation.limitations,
+    function_logic: logic,
     cancellation,
     timeout,
     concurrency: concurrent,

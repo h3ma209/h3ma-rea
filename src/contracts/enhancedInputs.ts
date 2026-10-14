@@ -28,6 +28,17 @@ export const enhancedInputSchemas = {
       ),
     max_names: z.number().int().min(1).max(10_000).default(500),
   }),
+  apply_objc_signatures: z.strictObject({
+    apply: z.boolean().default(false),
+    class_name: z.string().min(1).optional(),
+    selector: z.string().min(1).optional(),
+    max_methods: z.number().int().min(1).max(20_000).default(500),
+  }),
+  resolve_function_calls: z.strictObject({
+    procedure: z.string().min(1),
+    max_sites: z.number().int().min(1).max(4096).default(256),
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+  }),
   get_objc_classes: z.strictObject({ pattern: z.string().default("") }),
   get_objc_protocols: z.strictObject({}),
   batch_decompile: z.strictObject({

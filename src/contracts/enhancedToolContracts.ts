@@ -41,6 +41,16 @@ export const ENHANCED_TOOL_CONTRACTS = [
     enhancedInputSchemas.apply_demangled_names,
   ),
   enhanced(
+    "apply_objc_signatures",
+    "Plan, and optionally apply, Ghidra C signatures from decoded Objective-C method type encodings. apply defaults to false. Each applied signature uses annotate_native_function on that method's containing procedure. A rejected signature rolls back only that function. Unsupported encodings stay invalid and are not applied. Original executable bytes are unchanged.",
+    enhancedInputSchemas.apply_objc_signatures,
+  ),
+  enhanced(
+    "resolve_function_calls",
+    "Resolve every call site in one procedure. Provider call references stay distinct from an Objective-C selector/implementation join and from a Swift witness or vtable slot whose implementation address matches a resolved target. Ambiguous and unresolved sites stay explicit. This does not execute the target or traverse a call graph.",
+    enhancedInputSchemas.resolve_function_calls,
+  ),
+  enhanced(
     "get_objc_classes",
     "Discover and deduplicate Objective-C class labels, optionally filtering by literal substring.",
     enhancedInputSchemas.get_objc_classes,

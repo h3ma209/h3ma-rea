@@ -169,6 +169,16 @@ export const limitationsFor = (operation: string): readonly string[] => {
         "Reference kinds are direct Ghidra ReferenceManager observations; unresolved computed flows without a target are absent and remain unknown.",
         "Synthetic Ghidra entry-point references without actionable memory sources are omitted.",
       ];
+    case "inspect_native_regions":
+      return [
+        ...common,
+        "Regions come from the decompiler structure of the HighFunction block graph. Listing basic blocks are not used. A block with no if, loop, or switch parent stays unstructured.",
+      ];
+    case "evaluate_native_pcode":
+      return [
+        ...common,
+        "Evaluation uses the Ghidra p-code emulator on the loaded program image and stops at max_steps. Unresolved registers, aliases, computed calls, and memory outside the loaded image stay unknown. Program bytes and the session database are not written.",
+      ];
     case "analyze_function":
       return [
         ...common,

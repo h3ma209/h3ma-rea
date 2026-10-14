@@ -71,6 +71,10 @@ type DirectAnalysisTool =
   | "inspect_native_dispatch_metadata"
   | "inspect_native_dispatch_implementations"
   | "apply_demangled_names"
+  | "apply_objc_signatures"
+  | "resolve_function_calls"
+  | "inspect_native_regions"
+  | "evaluate_native_pcode"
   | "search_native_memory"
   | "search_strings"
   | "search_procedures"
@@ -394,6 +398,8 @@ const executeAnalysisTool = async (input: {
     tool === "inspect_native_dispatch_metadata" ||
     tool === "inspect_native_dispatch_implementations" ||
     tool === "apply_demangled_names" ||
+    tool === "apply_objc_signatures" ||
+    tool === "resolve_function_calls" ||
     tool === "trace_feature" ||
     tool === "trace_native_values" ||
     tool === "trace_native_ui_action"
@@ -592,6 +598,8 @@ const isWorkflowEvidenceTool = (
   tool === "inspect_native_dispatch_metadata" ||
   tool === "inspect_native_dispatch_implementations" ||
   tool === "apply_demangled_names" ||
+  tool === "apply_objc_signatures" ||
+  tool === "resolve_function_calls" ||
   tool === "trace_feature" ||
   tool === "trace_native_values" ||
   tool === "trace_native_ui_action";

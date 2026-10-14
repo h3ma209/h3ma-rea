@@ -196,6 +196,21 @@ export const OFFICIAL_TOOL_CONTRACTS = [
     z.object(analysisSearchInput),
   ),
   official(
+    "inspect_native_regions",
+    "Return Ghidra decompiler structured regions for one procedure: if, loop, and switch parents from the HighFunction block graph, plus unstructured blocks whose parent is absent or unrecognized. This does not structure the listing basic-block graph. Hopper does not advertise this operation.",
+    z.object({ procedure, document }),
+  ),
+  official(
+    "evaluate_native_pcode",
+    "Evaluate lifted p-code for one procedure inside the already loaded Ghidra program, up to max_steps. Returns concrete values whose inputs resolved and one unknown reason when a step needs an unresolved register, alias, computed call, or memory outside the loaded image. Does not launch the target or write program bytes or the session database. Hopper does not advertise this operation.",
+    z.object({
+      procedure,
+      address: z.string().min(1).optional(),
+      max_steps: z.number().int().min(1).max(10_000).default(256),
+      document,
+    }),
+  ),
+  official(
     "search_native_memory",
     "Search initialized program memory for a byte pattern with optional ?? wildcards, a scalar immediate, or an instruction mnemonic with optional operand substring. Each hit includes the address, decoded instruction text when available, and containing-procedure resolution. Hits are bounded by max_hits; exhaustive is false when that budget is reached. Ghidra searches loaded memory including loader fixups. Hopper does not advertise this operation.",
     z.object({

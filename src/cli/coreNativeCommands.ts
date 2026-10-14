@@ -20,6 +20,10 @@ export const registerCoreNativeCommands = (
   registerSearchNativeMemoryCommand(cli, logger, runDirectAnalysis);
   registerDispatchImplementationCommand(cli, logger, runDirectAnalysis);
   registerApplyDemangledNamesCommand(cli, logger, runDirectAnalysis);
+  registerApplyObjcSignaturesCommand(cli, logger, runDirectAnalysis);
+  registerResolveFunctionCallsCommand(cli, logger, runDirectAnalysis);
+  registerInspectNativeRegionsCommand(cli, logger, runDirectAnalysis);
+  registerEvaluateNativePcodeCommand(cli, logger, runDirectAnalysis);
   cli.command(CLI_COMMANDS.inspectNativeLoadImage, {
     description:
       "Verify loaded native bytes, source mappings, relocations and entry",
@@ -125,6 +129,15 @@ export const registerCoreNativeCommands = (
         .max(40000)
         .default(10000)
         .describe("Maximum retained graph edges"),
+      address: z
+        .string()
+        .min(1)
+        .optional()
+        .describe("Interior address; trace stays inside the procedure"),
+      direction: z
+        .enum(["forward", "backward"])
+        .default("forward")
+        .describe("Walk uses or definitions from an interior address"),
       offset: z
         .number()
         .int()
@@ -154,6 +167,10 @@ export const registerCoreNativeCommands = (
             max_edges: options.maxEdges,
             offset: options.offset,
             limit: options.limit,
+            direction: options.direction,
+            ...(options.address === undefined
+              ? {}
+              : { address: options.address }),
           },
           directAnalysisOptionsFromCli(logger, options),
         ),
@@ -306,6 +323,150 @@ const registerDispatchImplementationCommand = (
             },
             directAnalysisOptionsFromCli(logger, options),
           ),
+      ),
+  });
+};
+
+const registerApplyObjcSignaturesCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.applyObjcSignatures, {
+    description: "Plan or apply Objective-C method encodings as signatures",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+    }),
+    options: z.object({
+      apply: z
+        .boolean()
+        .default(false)
+        .describe("Apply eligible signatures; default is dry-run"),
+      className: z.string().min(1).optional().describe("Exact class name"),
+      selector: z.string().min(1).optional().describe("Exact selector"),
+      maxMethods: z
+        .number()
+        .int()
+        .min(1)
+        .max(20_000)
+        .default(500)
+        .describe("Maximum methods to examine"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.applyObjcSignatures, () =>
+        runDirectAnalysis(
+          args.path,
+          "apply_objc_signatures",
+          {
+            apply: options.apply,
+            max_methods: options.maxMethods,
+            ...(options.className === undefined
+              ? {}
+              : { class_name: options.className }),
+            ...(options.selector === undefined
+              ? {}
+              : { selector: options.selector }),
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerResolveFunctionCallsCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.resolveFunctionCalls, {
+    description: "Resolve every call site in one procedure",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+      procedure: z.string().describe("Procedure symbol or address"),
+    }),
+    options: z.object({
+      maxSites: z
+        .number()
+        .int()
+        .min(1)
+        .max(4096)
+        .default(256)
+        .describe("Maximum call sites"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.resolveFunctionCalls, () =>
+        runDirectAnalysis(
+          args.path,
+          "resolve_function_calls",
+          { procedure: args.procedure, max_sites: options.maxSites },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerInspectNativeRegionsCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.inspectNativeRegions, {
+    description: "List decompiler if, loop, and switch regions",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+      procedure: z.string().describe("Procedure symbol or address"),
+    }),
+    options: z.object({ ...nativeOpenOptionFields }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.inspectNativeRegions, () =>
+        runDirectAnalysis(
+          args.path,
+          "inspect_native_regions",
+          { procedure: args.procedure },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
+      ),
+  });
+};
+
+const registerEvaluateNativePcodeCommand = (
+  cli: CliInstance,
+  logger: Logger,
+  runDirectAnalysis: DirectAnalysis["runDirectAnalysis"],
+): void => {
+  cli.command(CLI_COMMANDS.evaluateNativePcode, {
+    description: "Evaluate bounded p-code inside one procedure",
+    args: z.object({
+      path: z.string().describe("Local executable path"),
+      procedure: z.string().describe("Procedure symbol or address"),
+    }),
+    options: z.object({
+      address: z.string().min(1).optional().describe("Start address"),
+      maxSteps: z
+        .number()
+        .int()
+        .min(1)
+        .max(10_000)
+        .default(256)
+        .describe("Maximum p-code steps"),
+      ...nativeOpenOptionFields,
+    }),
+    run: ({ args, options }) =>
+      logCliCommand(logger, CLI_COMMANDS.evaluateNativePcode, () =>
+        runDirectAnalysis(
+          args.path,
+          "evaluate_native_pcode",
+          {
+            procedure: args.procedure,
+            max_steps: options.maxSteps,
+            ...(options.address === undefined
+              ? {}
+              : { address: options.address }),
+          },
+          directAnalysisOptionsFromCli(logger, options),
+        ),
       ),
   });
 };

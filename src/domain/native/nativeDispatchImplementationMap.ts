@@ -12,6 +12,7 @@ export const nativeDispatchImplementationMapItemSchema = z.strictObject({
   method_type: z.enum(["instance", "class"]),
   category: z.string().nullable(),
   implementation_address: z.string().nullable(),
+  type_encoding: z.string().nullable().default(null),
   decode: nativeMetadataDecodeSchema,
   procedure: z
     .discriminatedUnion("found", [
@@ -58,6 +59,7 @@ export const dispatchImplementationWithoutProcedure = (
   method_type: implementation.method_type,
   category: implementation.category ?? null,
   implementation_address: implementation.implementation_address,
+  type_encoding: implementation.type_encoding,
   decode: implementation.decode,
   procedure:
     resolveProcedures === false
