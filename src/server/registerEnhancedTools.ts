@@ -92,6 +92,17 @@ export const registerEnhancedTools = (
   const traceFeature = toolContract("trace_feature");
   const traceCallPath = toolContract("trace_call_path");
   const traceNativeUiAction = toolContract("trace_native_ui_action");
+  const inspectMachoBindingsContract = toolContract("inspect_macho_bindings");
+  const traceNativeFunctionCallsContract = toolContract(
+    "trace_native_function_calls",
+  );
+  const inspectBinaryProtectionsContract = toolContract(
+    "inspect_binary_protections",
+  );
+  const detectCryptoPrimitivesContract = toolContract(
+    "detect_crypto_primitives",
+  );
+  const auditUnsafeApisContract = toolContract("audit_unsafe_apis");
   const resolveExternalSymbolsContract = toolContract(
     "resolve_external_symbols",
   );
@@ -104,6 +115,60 @@ export const registerEnhancedTools = (
   );
   const diffBinaryRevisionsContract = toolContract("diff_binary_revisions");
   const traceNativeValues = toolContract("trace_native_values");
+  server.registerTool(
+    inspectMachoBindingsContract.name,
+    toolRegistrationOptions(inspectMachoBindingsContract),
+    (input, context) =>
+      executeEnhancedTool(registration, inspectMachoBindingsContract, {
+        validatedCall: { name: "inspect_macho_bindings", input: input as any },
+        context,
+      }),
+  );
+  server.registerTool(
+    traceNativeFunctionCallsContract.name,
+    toolRegistrationOptions(traceNativeFunctionCallsContract),
+    (input, context) =>
+      executeEnhancedTool(registration, traceNativeFunctionCallsContract, {
+        validatedCall: {
+          name: "trace_native_function_calls",
+          input: input as any,
+        },
+        context,
+      }),
+  );
+  server.registerTool(
+    inspectBinaryProtectionsContract.name,
+    toolRegistrationOptions(inspectBinaryProtectionsContract),
+    (input, context) =>
+      executeEnhancedTool(registration, inspectBinaryProtectionsContract, {
+        validatedCall: {
+          name: "inspect_binary_protections",
+          input: input as any,
+        },
+        context,
+      }),
+  );
+  server.registerTool(
+    detectCryptoPrimitivesContract.name,
+    toolRegistrationOptions(detectCryptoPrimitivesContract),
+    (input, context) =>
+      executeEnhancedTool(registration, detectCryptoPrimitivesContract, {
+        validatedCall: {
+          name: "detect_crypto_primitives",
+          input: input as any,
+        },
+        context,
+      }),
+  );
+  server.registerTool(
+    auditUnsafeApisContract.name,
+    toolRegistrationOptions(auditUnsafeApisContract),
+    (input, context) =>
+      executeEnhancedTool(registration, auditUnsafeApisContract, {
+        validatedCall: { name: "audit_unsafe_apis", input: input as any },
+        context,
+      }),
+  );
   server.registerTool(
     resolveExternalSymbolsContract.name,
     toolRegistrationOptions(resolveExternalSymbolsContract),

@@ -11,6 +11,10 @@ import {
   readCallRelationships,
 } from "./CallRelationshipTraversal.js";
 import { DecompilationDiskCache } from "../ghidra/DecompilationCache.js";
+import { inspectMachoBindings } from "./native/InspectMachoBindings.js";
+import { inspectBinaryProtections } from "./native/InspectBinaryProtections.js";
+import { detectCryptoPrimitives } from "./native/DetectCryptoPrimitives.js";
+import { auditUnsafeApis } from "./native/AuditUnsafeApis.js";
 import { resolveExternalSymbols } from "./apple/ResolveExternalSymbols.js";
 import { scanEmbeddedKeys } from "./native/ScanEmbeddedKeys.js";
 import { inspectObjcSelectorRefs } from "./native/InspectObjcSelectorRefs.js";
@@ -164,6 +168,36 @@ export class EnhancedTools {
           ? this.executeValidated({ name, input: parsed.data }, signal)
           : invalidEnhancedInput(name, parsed.error, input);
       }
+      case "inspect_macho_bindings": {
+        return this.executeValidated({ name, input: {} }, signal);
+      }
+      case "trace_native_function_calls": {
+        const parsed =
+          enhancedInputSchemas.trace_native_function_calls.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "inspect_binary_protections": {
+        const parsed =
+          enhancedInputSchemas.inspect_binary_protections.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "detect_crypto_primitives": {
+        const parsed =
+          enhancedInputSchemas.detect_crypto_primitives.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "audit_unsafe_apis": {
+        const parsed = enhancedInputSchemas.audit_unsafe_apis.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
       case "resolve_external_symbols": {
         const parsed =
           enhancedInputSchemas.resolve_external_symbols.safeParse(input);
@@ -292,6 +326,19 @@ export class EnhancedTools {
         );
       case "trace_native_values":
         return traceNativeValues(this.analysis, call.input, signal);
+      case "inspect_macho_bindings":
+        return inspectMachoBindings(this.analysis, call.input, signal);
+      case "trace_native_function_calls":
+        return this.#analyzeFunction(
+          { procedure: (call.input as any).procedure },
+          signal,
+        );
+      case "inspect_binary_protections":
+        return inspectBinaryProtections(this.analysis, call.input, signal);
+      case "detect_crypto_primitives":
+        return detectCryptoPrimitives(this.analysis, call.input, signal);
+      case "audit_unsafe_apis":
+        return auditUnsafeApis(this.analysis, call.input, signal);
       case "resolve_external_symbols":
         return resolveExternalSymbols(this.analysis, call.input, signal);
       case "scan_embedded_keys":

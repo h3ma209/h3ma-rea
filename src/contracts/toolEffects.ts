@@ -589,6 +589,20 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
   binary_overview: evidence,
   analyze_function: evidence,
   inspect_native_api: effects({ mutatesSession: true, idempotent: false }),
+  inspect_binary_protections: effects({
+    mutatesSession: false,
+    idempotent: true,
+  }),
+  detect_crypto_primitives: effects({
+    mutatesSession: false,
+    idempotent: true,
+  }),
+  audit_unsafe_apis: effects({ mutatesSession: false, idempotent: true }),
+  inspect_macho_bindings: effects({ mutatesSession: false, idempotent: true }),
+  trace_native_function_calls: effects({
+    mutatesSession: false,
+    idempotent: false,
+  }),
   resolve_external_symbols: effects({
     mutatesSession: false,
     idempotent: true,

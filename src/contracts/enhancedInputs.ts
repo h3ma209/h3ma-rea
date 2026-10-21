@@ -65,6 +65,14 @@ export const enhancedInputSchemas = {
       .optional(),
     direction: callRelationshipDirectionSchema,
   }),
+  inspect_binary_protections: z.strictObject({}),
+  detect_crypto_primitives: z.strictObject({}),
+  audit_unsafe_apis: z.strictObject({}),
+  inspect_macho_bindings: z.strictObject({}),
+  trace_native_function_calls: z.strictObject({
+    procedure: z.string().min(1),
+    max_calls: z.number().int().min(1).max(100).default(10),
+  }),
   resolve_external_symbols: z.strictObject({
     binary_path: z
       .string()

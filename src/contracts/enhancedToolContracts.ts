@@ -96,6 +96,31 @@ export const ENHANCED_TOOL_CONTRACTS = [
     enhancedInputSchemas.trace_native_ui_action,
   ),
   enhanced(
+    "inspect_binary_protections",
+    "Inspect binary mitigation and hardening flags including PIE, Stack Canaries, ARC, and Hardened Runtime.",
+    enhancedInputSchemas.inspect_binary_protections,
+  ),
+  enhanced(
+    "detect_crypto_primitives",
+    "Scan binary string tables and read-only data for cryptographic constants, cipher suite names, and hashing primitives.",
+    enhancedInputSchemas.detect_crypto_primitives,
+  ),
+  enhanced(
+    "audit_unsafe_apis",
+    "Audit binary symbols for banned or high-risk C runtime functions (e.g. gets, strcpy, system) and provide safe remediations.",
+    enhancedInputSchemas.audit_unsafe_apis,
+  ),
+  enhanced(
+    "inspect_macho_bindings",
+    "Inspect Mach-O dynamic symbol bindings, stub helpers, lazy symbol pointers, and external dylib references.",
+    enhancedInputSchemas.inspect_macho_bindings,
+  ),
+  enhanced(
+    "trace_native_function_calls",
+    "Trace live invocations of a native function, capturing entry registers and caller context.",
+    enhancedInputSchemas.trace_native_function_calls,
+  ),
+  enhanced(
     "resolve_external_symbols",
     "Auto-locate and link matching detached .dSYM debug symbol bundles on macOS using DWARF UUID and Spotlight metadata.",
     enhancedInputSchemas.resolve_external_symbols,
