@@ -101,6 +101,15 @@ const inputSchemas = {
     .strict(),
   search_procedures: z.object(searchInput).strict(),
   search_strings: z.object(searchInput).strict(),
+  search_native_memory: z
+    .object({
+      kind: z.enum(["bytes", "immediate", "instruction"]),
+      pattern: z.string().min(1),
+      mask: z.string().nullable().default(null),
+      max_hits: z.number().int().min(1).max(10_000).default(256),
+      document,
+    })
+    .strict(),
   set_address_name: z
     .object({ document, address: explicitAddress, name: z.string().min(1) })
     .strict(),

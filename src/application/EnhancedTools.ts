@@ -63,6 +63,7 @@ import { applyObjcIvars } from "./native/ApplyObjcIvars.js";
 import { resolveFunctionCalls } from "./native/ResolveFunctionCalls.js";
 import { traceNativeValuesInRegion } from "./native/TraceNativeValuesInRegion.js";
 import { traceNativeValues } from "./native/NativeValueTrace.js";
+import { traceNativeValuesInRegion } from "./native/TraceNativeValuesInRegion.js";
 import { traceNativeUiAction } from "./native/NativeUiActionTrace.js";
 import { decompileAll } from "./decompileDirectory/decompileAll.js";
 import { jsonValueSchema, type JsonValue } from "../domain/jsonValue.js";
@@ -204,6 +205,56 @@ export class EnhancedTools {
         return parsed.success
           ? this.executeValidated({ name, input: parsed.data }, signal)
           : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "inspect_native_dispatch_implementations": {
+        const parsed =
+          enhancedInputSchemas.inspect_native_dispatch_implementations.safeParse(
+            input,
+          );
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "apply_demangled_names": {
+        const parsed =
+          enhancedInputSchemas.apply_demangled_names.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "apply_objc_signatures": {
+        const parsed =
+          enhancedInputSchemas.apply_objc_signatures.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "resolve_function_calls": {
+        const parsed =
+          enhancedInputSchemas.resolve_function_calls.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "inspect_objc_selector_refs": {
+        const parsed =
+          enhancedInputSchemas.inspect_objc_selector_refs.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "apply_objc_ivars": {
+        const parsed = enhancedInputSchemas.apply_objc_ivars.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
+      }
+      case "trace_native_values_in_region": {
+        const parsed =
+          enhancedInputSchemas.trace_native_values_in_region.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error);
       }
       case "get_objc_classes": {
         const parsed = enhancedInputSchemas.get_objc_classes.safeParse(input);

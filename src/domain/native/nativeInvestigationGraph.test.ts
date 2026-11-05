@@ -467,6 +467,8 @@ describe("placeholder dispatch joins", () => {
           selector: "buildTapped:",
           method_type: "instance",
           implementation_address: "0x1000",
+          selector_address: null,
+          type_encoding: null,
           location: { address: "0x1000", file_offset: null },
           decode: { status: "partial", reason: "symbol_name_only" },
           evidence,

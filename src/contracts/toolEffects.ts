@@ -569,6 +569,7 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
   procedure_references: evidence,
   procedure_pseudo_code: evidence,
   resolve_containing_procedure: evidence,
+  search_native_memory: evidence,
   search_procedures: evidence,
   search_strings: evidence,
   set_address_name: effects({

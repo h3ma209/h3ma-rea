@@ -124,7 +124,7 @@ import {
   verifySignatureTarget,
   type SignatureTargetBinding,
 } from "./SignatureTargetBinding.js";
-import { parseCodeSignature } from "./parsers/codesign.js";
+import { parseCodeSignature, parseEntitlements } from "./parsers/codesign.js";
 import { parseDemangledSymbols } from "./parsers/demangle.js";
 import { parseLipoCapture } from "./parsers/lipo.js";
 import {

@@ -539,6 +539,9 @@ const normalizeMacho = (
           ]
         : []),
     ]),
+    imports_by_source: covered(groupImportsBySource(imports), false, [
+      "Grouped from the same dyld_info import rows as imports; missing source remains a null group.",
+    ]),
     exports: covered(exports, false, [
       ...(missingExportsUuid
         ? [missingUuidLimitation("exports")]

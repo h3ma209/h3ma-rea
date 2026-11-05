@@ -50,7 +50,7 @@ const official = <
 export const OFFICIAL_TOOL_CONTRACTS = [
   official(
     "annotate_native_function",
-    "Atomically update one function name and/or entry comments, read them back, and return a refreshed complete function dossier. Ghidra changes its ephemeral session analysis database only; original executable bytes remain unchanged. Empty comment text clears that comment. Edits remain available to subsequent MCP calls until close; CLI returns the updated dossier before discarding its session. Invalid edits roll back the entire operation. Windows P0 and providers without this capability are unsupported.",
+    "Atomically update one function name, entry comments, C-like signature, local names/types, and/or session-database structures, read them back, and return a refreshed complete function dossier. Ghidra changes its ephemeral session analysis database only; original executable bytes remain unchanged. Empty comment text clears that comment. Edits remain available to subsequent MCP calls until close; CLI returns the updated dossier before discarding its session. Invalid edits roll back the entire operation. Windows P0 and providers without this capability are unsupported.",
     nativeFunctionAnnotationsInputSchema,
   ),
   official(
@@ -221,6 +221,32 @@ export const OFFICIAL_TOOL_CONTRACTS = [
     `Search every analyzed procedure name, including secondary names exact lookup accepts, using literal matching by default or regex when requested. Each procedure appears once under its primary name; matched_aliases lists matching secondary names. Results are deterministic and complete. ${hopperRegexDeadline} Select detail summary for counts and retained native-inventory pages; complete remains the default.`,
     z.object({ ...nativeSearchInput, detail: analysisDetailSchema }),
     { evidenceParameters: "omit-detail" },
+  ),
+  official(
+    "inspect_native_regions",
+    "Return Ghidra decompiler structured regions for one procedure: if, loop, and switch parents from the HighFunction block graph, plus unstructured blocks whose parent is absent or unrecognized. This does not structure the listing basic-block graph. Hopper does not advertise this operation.",
+    z.object({ procedure, document }),
+  ),
+  official(
+    "evaluate_native_pcode",
+    "Evaluate lifted p-code for one procedure inside the already loaded Ghidra program, up to max_steps. Returns concrete values whose inputs resolved and one unknown reason when a step needs an unresolved register, alias, computed call, or memory outside the loaded image. Does not launch the target or write program bytes or the session database. Hopper does not advertise this operation.",
+    z.object({
+      procedure,
+      address: z.string().min(1).optional(),
+      max_steps: z.number().int().min(1).max(10_000).default(256),
+      document,
+    }),
+  ),
+  official(
+    "search_native_memory",
+    "Search initialized program memory for a byte pattern with optional ?? wildcards, a scalar immediate, or an instruction mnemonic with optional operand substring. Each hit includes the address, decoded instruction text when available, and containing-procedure resolution. Hits are bounded by max_hits; exhaustive is false when that budget is reached. Ghidra searches loaded memory including loader fixups. Hopper does not advertise this operation.",
+    z.object({
+      kind: z.enum(["bytes", "immediate", "instruction"]),
+      pattern: z.string().min(1),
+      mask: nativeMemorySearchBytesPatternSchema.optional(),
+      max_hits: z.number().int().min(1).max(10_000).default(256),
+      document,
+    }),
   ),
   official(
     "search_strings",

@@ -147,6 +147,11 @@ const importSymbolSchema = z.object({
   reexport: z.boolean().nullable(),
   source: z.string().nullable(),
 });
+const importSourceGroupSchema = z.object({
+  source: z.string().nullable(),
+  count: z.number().int().min(0),
+  symbols: z.array(z.string()),
+});
 const dependencySchema = z.object({
   path: z.string().nullable(),
   path_bytes_hex: bytesHex

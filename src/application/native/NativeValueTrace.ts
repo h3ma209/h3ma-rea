@@ -3,6 +3,7 @@ import { nativeCallTargetsSchema } from "../../domain/native/nativeInstruction.j
 import {
   nativeValueTraceInputSchema,
   nativeValueTraceSchema,
+  sliceNativeValueGraph,
 } from "../../domain/native/nativeValueTrace.js";
 import { createAnalysisExecutionEvidence } from "../../domain/analysisObservation.js";
 import {

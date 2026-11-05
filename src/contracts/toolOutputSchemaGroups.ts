@@ -51,6 +51,16 @@ import {
 } from "../domain/evidenceRecordSummary.js";
 import { liveBinaryTargetSummaryVariants } from "../domain/liveBinaryTargetSummary.js";
 import { nativeFunctionAnnotationsSchema } from "../domain/native/nativeFunctionAnnotations.js";
+import { nativeMemorySearchSchema } from "../domain/native/nativeMemorySearch.js";
+import { nativeDispatchImplementationMapSchema } from "../domain/native/nativeDispatchImplementationMap.js";
+import { applyDemangledNamesSchema } from "../domain/native/demangledNames.js";
+import { applyObjcSignaturesSchema } from "../domain/native/objcSignatures.js";
+import { applyObjcIvarsSchema } from "../domain/native/objcIvarApply.js";
+import { inspectObjcSelectorRefsSchema } from "../domain/native/objcSelectorRefs.js";
+import { nativeValueTraceInRegionSchema } from "../domain/native/nativeValueTraceRegion.js";
+import { functionCallResolutionSchema } from "../domain/native/functionCallResolution.js";
+import { nativeControlRegionsSchema } from "../domain/native/nativeControlRegions.js";
+import { nativePcodeEvaluationSchema } from "../domain/native/nativePcodeEvaluation.js";
 import { nativeLoadImageSchema } from "../domain/native/nativeLoadImage.js";
 import { nativeUiResultSchema } from "../domain/native/nativeUiObservation.js";
 import { nativeValueTraceSchema } from "../domain/native/nativeValueTrace.js";
@@ -159,6 +169,8 @@ export const officialOutputSchemas = {
   inspect_native_data_type: evidenceResultOf(nativeDataTypeSchema),
   inspect_native_instruction: evidenceResultOf(nativeInstructionSchema),
   resolve_native_call_targets: evidenceResultOf(nativeCallTargetsSchema),
+  inspect_native_regions: evidenceResultOf(nativeControlRegionsSchema),
+  evaluate_native_pcode: evidenceResultOf(nativePcodeEvaluationSchema),
   address_name: evidenceResultOf(nullableText),
   comment: evidenceResultOf(nullableText),
   current_address: evidenceResultOf(z.string()),

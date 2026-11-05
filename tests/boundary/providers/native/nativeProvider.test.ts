@@ -1350,6 +1350,7 @@ describe("native macOS provider inspection", () => {
         ],
       },
       imports: { exhaustive: false },
+      imports_by_source: { exhaustive: false },
       exports: { exhaustive: false },
     });
     expect(JSON.stringify(execution.value.result)).not.toContain(target.path);
