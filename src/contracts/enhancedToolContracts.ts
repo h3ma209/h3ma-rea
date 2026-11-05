@@ -96,6 +96,31 @@ export const ENHANCED_TOOL_CONTRACTS = [
     enhancedInputSchemas.trace_native_ui_action,
   ),
   enhanced(
+    "resolve_external_symbols",
+    "Auto-locate and link matching detached .dSYM debug symbol bundles on macOS using DWARF UUID and Spotlight metadata.",
+    enhancedInputSchemas.resolve_external_symbols,
+  ),
+  enhanced(
+    "scan_embedded_keys",
+    "Scan mapped binary string tables, rodata, and text sections for API keys, bearer tokens, PEM certificates, and high Shannon entropy candidate secrets.",
+    enhancedInputSchemas.scan_embedded_keys,
+  ),
+  enhanced(
+    "inspect_objc_selector_refs",
+    "List static reference sites for decoded Objective-C selectors, resolving containing procedures where possible.",
+    enhancedInputSchemas.inspect_objc_selector_refs,
+  ),
+  enhanced(
+    "inspect_swift_concurrency",
+    "Analyze Swift async/await tasks, actor boundaries, and continuation points from mangled concurrency runtime symbols.",
+    enhancedInputSchemas.inspect_swift_concurrency,
+  ),
+  enhanced(
+    "diff_binary_revisions",
+    "Compute high-level semantic differences between two binary revisions (symbols added/removed, altered strings, modified procedure footprints).",
+    enhancedInputSchemas.diff_binary_revisions,
+  ),
+  enhanced(
     "trace_native_values",
     "Trace a bounded static dependency graph from one explicit native procedure. Includes high-p-code def-use, constants, operators, memory and branch operations, resolved call edges, and derived argument/parameter and return/output bindings. Missing bindings, alias semantics, persistent state and RNG roles remain unknown. Budgets bound depth, decompilations, graph size and payloads; nodes are paginated. A Ghidra per-function timeout does not bound the whole traversal; allow startup, every attempted function and other work, or reduce max_functions.",
     enhancedInputSchemas.trace_native_values,

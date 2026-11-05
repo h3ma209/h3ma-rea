@@ -100,6 +100,8 @@ import {
 import { registerReverseEngineeringTools } from "./registerReverseEngineeringTools.js";
 import { registerCutterTools } from "./registerCutterTools.js";
 import { registerGdbTools } from "./registerGdbTools.js";
+import { registerLldbTools } from "./registerLldbTools.js";
+import { LldbSessionManager } from "../lldb/LldbSessionManager.js";
 import { registerRizinDebugTools } from "./registerRizinDebugTools.js";
 
 export interface CreateServerOptions extends CapabilityServiceOptions {
@@ -292,6 +294,7 @@ export const createServer = (
           };
         })();
   const toolLogger = logger.child({ layer: "server" });
+  const lldbSessions = new LldbSessionManager();
   const {
     evidenceById,
     activeTarget,
@@ -405,6 +408,7 @@ export const createServer = (
         recordSessionEvidence,
         session,
       );
+      registerLldbTools(server, lldbSessions, toolLogger, delivery);
       registerGdbTools(
         server,
         gdbSessions,

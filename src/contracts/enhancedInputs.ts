@@ -65,6 +65,66 @@ export const enhancedInputSchemas = {
       .optional(),
     direction: callRelationshipDirectionSchema,
   }),
+  resolve_external_symbols: z.strictObject({
+    binary_path: z
+      .string()
+      .min(1)
+      .describe("Absolute path to binary executable"),
+  }),
+  scan_embedded_keys: z.strictObject({
+    min_entropy: z
+      .number()
+      .min(2.0)
+      .max(8.0)
+      .default(4.5)
+      .describe("Minimum Shannon entropy threshold (0.0 to 8.0)"),
+    max_findings: z
+      .number()
+      .int()
+      .min(1)
+      .max(5_000)
+      .default(500)
+      .describe("Maximum findings to report"),
+  }),
+  inspect_objc_selector_refs: z.strictObject({
+    class_name: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Filter references by exact Objective-C class name"),
+    selector: z
+      .string()
+      .min(1)
+      .optional()
+      .describe("Filter references by exact selector name"),
+    max_selectors: z.number().int().min(1).max(5_000).default(256),
+    max_refs: z.number().int().min(1).max(20_000).default(2_000),
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+  }),
+  inspect_swift_concurrency: z.strictObject({
+    max_records: z
+      .number()
+      .int()
+      .min(1)
+      .max(20_000)
+      .default(5_000)
+      .describe("Maximum symbol and procedure records to inspect"),
+  }),
+  diff_binary_revisions: z.strictObject({
+    baseline_document: z
+      .string()
+      .min(1)
+      .describe(
+        "Provider document name or path of baseline binary to compare against",
+      ),
+    max_differences: z
+      .number()
+      .int()
+      .min(1)
+      .max(2_000)
+      .default(500)
+      .describe("Maximum differences to report"),
+  }),
   trace_native_ui_action: nativeInvestigationTraceLimitsSchema.extend({
     action: z
       .string()

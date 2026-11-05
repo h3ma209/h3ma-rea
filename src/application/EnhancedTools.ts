@@ -10,6 +10,12 @@ import {
   cleanupStoppedTraversal,
   readCallRelationships,
 } from "./CallRelationshipTraversal.js";
+import { DecompilationDiskCache } from "../ghidra/DecompilationCache.js";
+import { resolveExternalSymbols } from "./apple/ResolveExternalSymbols.js";
+import { scanEmbeddedKeys } from "./native/ScanEmbeddedKeys.js";
+import { inspectObjcSelectorRefs } from "./native/InspectObjcSelectorRefs.js";
+import { inspectSwiftConcurrency } from "./native/InspectSwiftConcurrency.js";
+import { diffBinaryRevisions } from "./binaryDiagnostics/DiffBinaryRevisions.js";
 import { z } from "zod";
 
 import type {
@@ -109,6 +115,8 @@ const isAnalysisCancellation = (
  * `executeValidated` so an MCP input is parsed exactly once.
  */
 export class EnhancedTools {
+  readonly #decompCache = new DecompilationDiskCache();
+
   constructor(private readonly analysis: AnalysisOperationPort) {}
 
   /** Parse an untrusted direct-call input once, then dispatch exhaustively. */
@@ -152,6 +160,40 @@ export class EnhancedTools {
       }
       case "get_objc_protocols": {
         const parsed = enhancedInputSchemas.get_objc_protocols.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "resolve_external_symbols": {
+        const parsed =
+          enhancedInputSchemas.resolve_external_symbols.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "scan_embedded_keys": {
+        const parsed = enhancedInputSchemas.scan_embedded_keys.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "inspect_objc_selector_refs": {
+        const parsed =
+          enhancedInputSchemas.inspect_objc_selector_refs.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "inspect_swift_concurrency": {
+        const parsed =
+          enhancedInputSchemas.inspect_swift_concurrency.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "diff_binary_revisions": {
+        const parsed =
+          enhancedInputSchemas.diff_binary_revisions.safeParse(input);
         return parsed.success
           ? this.executeValidated({ name, input: parsed.data }, signal)
           : invalidEnhancedInput(name, parsed.error, input);
@@ -250,6 +292,16 @@ export class EnhancedTools {
         );
       case "trace_native_values":
         return traceNativeValues(this.analysis, call.input, signal);
+      case "resolve_external_symbols":
+        return resolveExternalSymbols(this.analysis, call.input, signal);
+      case "scan_embedded_keys":
+        return scanEmbeddedKeys(this.analysis, call.input, signal);
+      case "inspect_objc_selector_refs":
+        return inspectObjcSelectorRefs(this.analysis, call.input, signal);
+      case "inspect_swift_concurrency":
+        return inspectSwiftConcurrency(this.analysis, call.input, signal);
+      case "diff_binary_revisions":
+        return diffBinaryRevisions(this.analysis, call.input, signal);
       case "trace_native_ui_action": {
         return traceNativeUiAction(this.analysis, call.input, signal);
       }

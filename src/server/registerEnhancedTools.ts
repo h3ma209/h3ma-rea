@@ -92,7 +92,63 @@ export const registerEnhancedTools = (
   const traceFeature = toolContract("trace_feature");
   const traceCallPath = toolContract("trace_call_path");
   const traceNativeUiAction = toolContract("trace_native_ui_action");
+  const resolveExternalSymbolsContract = toolContract(
+    "resolve_external_symbols",
+  );
+  const scanEmbeddedKeysContract = toolContract("scan_embedded_keys");
+  const inspectObjcSelectorRefsContract = toolContract(
+    "inspect_objc_selector_refs",
+  );
+  const inspectSwiftConcurrencyContract = toolContract(
+    "inspect_swift_concurrency",
+  );
+  const diffBinaryRevisionsContract = toolContract("diff_binary_revisions");
   const traceNativeValues = toolContract("trace_native_values");
+  server.registerTool(
+    resolveExternalSymbolsContract.name,
+    toolRegistrationOptions(resolveExternalSymbolsContract),
+    (input, context) =>
+      executeEnhancedTool(registration, resolveExternalSymbolsContract, {
+        validatedCall: { name: "resolve_external_symbols", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    scanEmbeddedKeysContract.name,
+    toolRegistrationOptions(scanEmbeddedKeysContract),
+    (input, context) =>
+      executeEnhancedTool(registration, scanEmbeddedKeysContract, {
+        validatedCall: { name: "scan_embedded_keys", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    inspectObjcSelectorRefsContract.name,
+    toolRegistrationOptions(inspectObjcSelectorRefsContract),
+    (input, context) =>
+      executeEnhancedTool(registration, inspectObjcSelectorRefsContract, {
+        validatedCall: { name: "inspect_objc_selector_refs", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    inspectSwiftConcurrencyContract.name,
+    toolRegistrationOptions(inspectSwiftConcurrencyContract),
+    (input, context) =>
+      executeEnhancedTool(registration, inspectSwiftConcurrencyContract, {
+        validatedCall: { name: "inspect_swift_concurrency", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    diffBinaryRevisionsContract.name,
+    toolRegistrationOptions(diffBinaryRevisionsContract),
+    (input, context) =>
+      executeEnhancedTool(registration, diffBinaryRevisionsContract, {
+        validatedCall: { name: "diff_binary_revisions", input },
+        context,
+      }),
+  );
   server.registerTool(
     traceNativeValues.name,
     toolRegistrationOptions(traceNativeValues),

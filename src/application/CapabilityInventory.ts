@@ -210,6 +210,15 @@ const NATIVE_UI_ACTION_COMPOSITION: ModeComposition = {
 // allowing a newly registered workflow to silently look like a missing provider.
 const ENHANCED_REQUIREMENTS: ReadonlyMap<string, ProviderComposition> = new Map(
   Object.entries({
+    resolve_external_symbols: ["list_names"],
+    scan_embedded_keys: ["list_strings"],
+    inspect_objc_selector_refs: [
+      "list_strings",
+      "xrefs",
+      "resolve_containing_procedure",
+    ],
+    inspect_swift_concurrency: ["list_procedures", "demangle_swift"],
+    diff_binary_revisions: ["list_names"],
     trace_native_values: ["analyze_function", "resolve_native_call_targets"],
     trace_native_ui_action: NATIVE_UI_ACTION_COMPOSITION,
     inspect_native_dispatch_metadata: [

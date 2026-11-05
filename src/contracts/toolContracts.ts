@@ -39,6 +39,7 @@ import { ENHANCED_TOOL_CONTRACTS } from "./enhancedToolContracts.js";
 import { SESSION_TOOL_CONTRACTS } from "./sessionToolContracts.js";
 import { CUTTER_TOOL_CONTRACTS } from "./cutterToolContracts.js";
 import { REVERSE_ENGINEERING_TOOL_CONTRACTS } from "./reverseEngineeringToolContracts.js";
+import { LLDB_TOOL_CONTRACTS } from "./lldbToolContracts.js";
 import { GDB_TOOL_CONTRACTS } from "./gdbToolContracts.js";
 import { RIZIN_DEBUG_TOOL_CONTRACTS } from "./rizinDebugToolContracts.js";
 import { FRIDA_TOOL_CONTRACTS } from "./fridaToolContracts.js";
@@ -88,6 +89,7 @@ export const TOOL_CONTRACTS = [
   ...SESSION_TOOL_CONTRACTS,
   ...CUTTER_TOOL_CONTRACTS,
   ...REVERSE_ENGINEERING_TOOL_CONTRACTS,
+  ...LLDB_TOOL_CONTRACTS,
   ...GDB_TOOL_CONTRACTS,
   ...RIZIN_DEBUG_TOOL_CONTRACTS,
   ...FRIDA_TOOL_CONTRACTS,

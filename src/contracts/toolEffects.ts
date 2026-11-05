@@ -69,6 +69,9 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
     mutatesSession: true,
     launchesProcess: true,
   }),
+  start_lldb_session: effects({ mutatesSession: false, idempotent: false }),
+  lldb_console: effects({ mutatesSession: false, idempotent: false }),
+  close_lldb_session: effects({ mutatesSession: false, idempotent: true }),
   start_gdb_session: effects({
     launchesProcess: true,
     mutatesSession: true,
@@ -586,6 +589,20 @@ export const TOOL_EFFECTS: Readonly<Record<string, ToolEffects>> = {
   binary_overview: evidence,
   analyze_function: evidence,
   inspect_native_api: effects({ mutatesSession: true, idempotent: false }),
+  resolve_external_symbols: effects({
+    mutatesSession: false,
+    idempotent: true,
+  }),
+  scan_embedded_keys: effects({ mutatesSession: false, idempotent: true }),
+  inspect_objc_selector_refs: effects({
+    mutatesSession: false,
+    idempotent: true,
+  }),
+  inspect_swift_concurrency: effects({
+    mutatesSession: false,
+    idempotent: true,
+  }),
+  diff_binary_revisions: effects({ mutatesSession: false, idempotent: true }),
   trace_feature: effects({ mutatesSession: true, idempotent: false }),
   trace_call_path: effects({ mutatesSession: true, idempotent: false }),
   observe_native_ui: effects({
