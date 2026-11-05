@@ -79,6 +79,16 @@ export const registerEnhancedTools = (
   const nativeDispatchMetadata = toolContract(
     "inspect_native_dispatch_metadata",
   );
+  const nativeDispatchImplementations = toolContract(
+    "inspect_native_dispatch_implementations",
+  );
+  const applyDemangledNames = toolContract("apply_demangled_names");
+  const applyObjcSignatures = toolContract("apply_objc_signatures");
+  const resolveFunctionCalls = toolContract("resolve_function_calls");
+  const applyObjcIvars = toolContract("apply_objc_ivars");
+  const traceNativeValuesInRegion = toolContract(
+    "trace_native_values_in_region",
+  );
   const objcClasses = toolContract("get_objc_classes");
   const objcProtocols = toolContract("get_objc_protocols");
   const batchDecompile = toolContract("batch_decompile");
@@ -229,6 +239,63 @@ export const registerEnhancedTools = (
     (input, context) =>
       executeEnhancedTool(registration, nativeDispatchMetadata, {
         validatedCall: { name: "inspect_native_dispatch_metadata", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    nativeDispatchImplementations.name,
+    toolRegistrationOptions(nativeDispatchImplementations),
+    (input, context) =>
+      executeEnhancedTool(registration, nativeDispatchImplementations, {
+        validatedCall: {
+          name: "inspect_native_dispatch_implementations",
+          input,
+        },
+        context,
+      }),
+  );
+  server.registerTool(
+    applyDemangledNames.name,
+    toolRegistrationOptions(applyDemangledNames),
+    (input, context) =>
+      executeEnhancedTool(registration, applyDemangledNames, {
+        validatedCall: { name: "apply_demangled_names", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    applyObjcSignatures.name,
+    toolRegistrationOptions(applyObjcSignatures),
+    (input, context) =>
+      executeEnhancedTool(registration, applyObjcSignatures, {
+        validatedCall: { name: "apply_objc_signatures", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    resolveFunctionCalls.name,
+    toolRegistrationOptions(resolveFunctionCalls),
+    (input, context) =>
+      executeEnhancedTool(registration, resolveFunctionCalls, {
+        validatedCall: { name: "resolve_function_calls", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    applyObjcIvars.name,
+    toolRegistrationOptions(applyObjcIvars),
+    (input, context) =>
+      executeEnhancedTool(registration, applyObjcIvars, {
+        validatedCall: { name: "apply_objc_ivars", input },
+        context,
+      }),
+  );
+  server.registerTool(
+    traceNativeValuesInRegion.name,
+    toolRegistrationOptions(traceNativeValuesInRegion),
+    (input, context) =>
+      executeEnhancedTool(registration, traceNativeValuesInRegion, {
+        validatedCall: { name: "trace_native_values_in_region", input },
         context,
       }),
   );

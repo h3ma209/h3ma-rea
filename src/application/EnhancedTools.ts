@@ -56,6 +56,12 @@ import {
   selectObjcClassCandidates,
 } from "../domain/symbolAnalysis.js";
 import { inspectNativeDispatch } from "./native/NativeDispatchMetadataInspection.js";
+import { inspectNativeDispatchImplementations } from "./native/NativeDispatchImplementationMap.js";
+import { applyDemangledNames } from "./native/ApplyDemangledNames.js";
+import { applyObjcSignatures } from "./native/ApplyObjcSignatures.js";
+import { applyObjcIvars } from "./native/ApplyObjcIvars.js";
+import { resolveFunctionCalls } from "./native/ResolveFunctionCalls.js";
+import { traceNativeValuesInRegion } from "./native/TraceNativeValuesInRegion.js";
 import { traceNativeValues } from "./native/NativeValueTrace.js";
 import { traceNativeUiAction } from "./native/NativeUiActionTrace.js";
 import { decompileAll } from "./decompileDirectory/decompileAll.js";
@@ -152,6 +158,49 @@ export class EnhancedTools {
           enhancedInputSchemas.inspect_native_dispatch_metadata.safeParse(
             input,
           );
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "inspect_native_dispatch_implementations": {
+        const parsed =
+          enhancedInputSchemas.inspect_native_dispatch_implementations.safeParse(
+            input,
+          );
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "apply_demangled_names": {
+        const parsed =
+          enhancedInputSchemas.apply_demangled_names.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "apply_objc_signatures": {
+        const parsed =
+          enhancedInputSchemas.apply_objc_signatures.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "resolve_function_calls": {
+        const parsed =
+          enhancedInputSchemas.resolve_function_calls.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "apply_objc_ivars": {
+        const parsed = enhancedInputSchemas.apply_objc_ivars.safeParse(input);
+        return parsed.success
+          ? this.executeValidated({ name, input: parsed.data }, signal)
+          : invalidEnhancedInput(name, parsed.error, input);
+      }
+      case "trace_native_values_in_region": {
+        const parsed =
+          enhancedInputSchemas.trace_native_values_in_region.safeParse(input);
         return parsed.success
           ? this.executeValidated({ name, input: parsed.data }, signal)
           : invalidEnhancedInput(name, parsed.error, input);
@@ -286,6 +335,22 @@ export class EnhancedTools {
             call.input.objc_class_import_addresses_complete,
           maxInputBytes: call.input.max_input_bytes,
         });
+      case "inspect_native_dispatch_implementations":
+        return inspectNativeDispatchImplementations(
+          this.analysis,
+          call.input,
+          signal,
+        );
+      case "apply_demangled_names":
+        return applyDemangledNames(this.analysis, call.input, signal);
+      case "apply_objc_signatures":
+        return applyObjcSignatures(this.analysis, call.input, signal);
+      case "resolve_function_calls":
+        return resolveFunctionCalls(this.analysis, call.input, signal);
+      case "apply_objc_ivars":
+        return applyObjcIvars(this.analysis, call.input, signal);
+      case "trace_native_values_in_region":
+        return traceNativeValuesInRegion(this.analysis, call.input, signal);
       case "get_objc_classes":
         return this.#objcClasses(call.input.pattern, signal);
       case "get_objc_protocols":

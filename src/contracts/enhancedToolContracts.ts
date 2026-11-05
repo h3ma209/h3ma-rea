@@ -36,6 +36,36 @@ export const ENHANCED_TOOL_CONTRACTS = [
     enhancedInputSchemas.inspect_native_dispatch_metadata,
   ),
   enhanced(
+    "inspect_native_dispatch_implementations",
+    "Join decoded Objective-C class/selector/implementation rows with the bound provider's containing-procedure inventory. Optional class_name and selector filters are exact. Unmapped implementations and unresolved procedure joins remain explicit. Runtime dispatch is unknown.",
+    enhancedInputSchemas.inspect_native_dispatch_implementations,
+  ),
+  enhanced(
+    "apply_demangled_names",
+    "Plan, and optionally apply, analyst names from Swift demangle results for mangled symbols in the bound name inventory. apply defaults to false and returns the rename plan only. Application uses set_addresses_names and reports per-address readback. Original executable bytes are unchanged.",
+    enhancedInputSchemas.apply_demangled_names,
+  ),
+  enhanced(
+    "apply_objc_signatures",
+    "Plan, and optionally apply, Ghidra C signatures from decoded Objective-C method type encodings. apply defaults to false. Each applied signature uses annotate_native_function on that method's containing procedure.",
+    enhancedInputSchemas.apply_objc_signatures,
+  ),
+  enhanced(
+    "resolve_function_calls",
+    "Resolve every call site in one procedure. Provider call references stay distinct from Objective-C and Swift metadata joins. Ambiguous and unresolved sites stay explicit.",
+    enhancedInputSchemas.resolve_function_calls,
+  ),
+  enhanced(
+    "apply_objc_ivars",
+    "Plan, and optionally apply, Ghidra structures from decoded Objective-C ivar layouts. apply defaults to false.",
+    enhancedInputSchemas.apply_objc_ivars,
+  ),
+  enhanced(
+    "trace_native_values_in_region",
+    "Trace a bounded static dependency graph inside one decompiler region of an explicit procedure.",
+    enhancedInputSchemas.trace_native_values_in_region,
+  ),
+  enhanced(
     "get_objc_classes",
     "Discover Objective-C class labels, optionally filtering by literal substring. Rows are coalesced only when exact selected-image pointer-fixup evidence proves that their own addresses bind the same imported class symbol, binding stream, raw library ordinal and resolved library, weak status, and addend. Rows without that evidence remain separate, with identity coverage reported as unknown, partial, or unsupported.",
     enhancedInputSchemas.get_objc_classes,

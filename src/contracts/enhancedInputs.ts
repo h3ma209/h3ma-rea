@@ -3,6 +3,7 @@ import { nativeDispatchMetadataInputSchema } from "../domain/native/objcSwiftMet
 import { nativeProcedureInputSchema } from "../domain/native/nativeProcedureInput.js";
 import { decompileDirectoryInputSchema } from "./decompileDirectory.js";
 import { nativeValueTraceInputSchema } from "../domain/native/nativeValueTrace.js";
+import { nativeValueTraceInRegionInputSchema } from "../domain/native/nativeValueTraceRegion.js";
 import { nativeInvestigationTraceLimitsSchema } from "../domain/native/nativeInvestigationGraph.js";
 const traceLiteralInputSchema = z.strictObject({
   query: z.string().min(1),
@@ -21,6 +22,41 @@ export type CallRelationshipDirection = z.output<
 export const enhancedInputSchemas = {
   trace_native_values: nativeValueTraceInputSchema,
   inspect_native_dispatch_metadata: nativeDispatchMetadataInputSchema,
+  inspect_native_dispatch_implementations: z.strictObject({
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+    class_name: z.string().min(1).optional(),
+    selector: z.string().min(1).optional(),
+    resolve_procedures: z.boolean().default(true),
+  }),
+  apply_demangled_names: z.strictObject({
+    apply: z.boolean().default(false),
+    pattern: z
+      .string()
+      .min(1)
+      .optional()
+      .describe(
+        "Case-sensitive literal filter applied to current names and demangled text",
+      ),
+    max_names: z.number().int().min(1).max(10_000).default(500),
+  }),
+  apply_objc_signatures: z.strictObject({
+    apply: z.boolean().default(false),
+    class_name: z.string().min(1).optional(),
+    selector: z.string().min(1).optional(),
+    max_methods: z.number().int().min(1).max(20_000).default(500),
+  }),
+  resolve_function_calls: z.strictObject({
+    procedure: z.string().min(1),
+    max_sites: z.number().int().min(1).max(4096).default(256),
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+  }),
+  apply_objc_ivars: z.strictObject({
+    apply: z.boolean().default(false),
+    class_name: z.string().min(1).optional(),
+    max_classes: z.number().int().min(1).max(2_000).default(200),
+    max_records: z.number().int().min(1).max(20_000).default(5_000),
+  }),
+  trace_native_values_in_region: nativeValueTraceInRegionInputSchema,
   get_objc_classes: z.strictObject({ pattern: z.string().default("") }),
   get_objc_protocols: z.strictObject({}),
   batch_decompile: z.strictObject({
