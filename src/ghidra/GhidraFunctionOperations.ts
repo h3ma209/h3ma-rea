@@ -13,4 +13,6 @@ export const GHIDRA_FUNCTION_OPERATIONS = [
   "read_function_instructions",
   "procedure_references",
   "xrefs",
+  "inspect_native_regions",
+  "evaluate_native_pcode",
 ] as const;

@@ -6,7 +6,7 @@ import {
   AnalysisOutputError,
 } from "../../domain/analysisErrorCore.js";
 import { enhancedInputSchemas } from "../../contracts/enhancedInputs.js";
-import { functionDossierSchema } from "../../domain/hopperValues.js";
+import { functionDossierSchema } from "../../domain/native/functionDossier.js";
 import { nativeCallTargetsSchema } from "../../domain/native/nativeInstruction.js";
 import { functionCallResolutionSchema } from "../../domain/native/functionCallResolution.js";
 import { nativeValueFlowSchema } from "../../domain/native/nativeValueFlow.js";
@@ -162,7 +162,7 @@ export const resolveFunctionCalls = async (
   const metadata = await inspectNativeDispatch(
     analysis,
     input.max_records,
-    signal,
+    signal === undefined ? {} : { signal },
   );
   if (!metadata.ok) {
     if (!(metadata.error instanceof AnalysisCapabilityUnavailableError))
@@ -186,7 +186,11 @@ export const resolveFunctionCalls = async (
   const sites = [];
   for (const address of examined) {
     if (signal?.aborted)
-      return err(new AnalysisCancelledError("resolve_function_calls"));
+      return err(
+        new AnalysisCancelledError("resolve_function_calls", {
+          cause: signal.reason,
+        }),
+      );
     const resolved = await analysis.execute(
       "resolve_native_call_targets",
       { address },
@@ -230,7 +234,10 @@ export const resolveFunctionCalls = async (
       const objc = objcTargets(dossier.data, address, implementations);
       if (objc !== null && objc.targets.length === 1) {
         const implementation = objc.targets[0];
-        if (implementation !== undefined && implementation.implementation_address !== null) {
+        if (
+          implementation !== undefined &&
+          implementation.implementation_address !== null
+        ) {
           status = "resolved-indirect";
           mechanism = "computed";
           basis = "objc-metadata";

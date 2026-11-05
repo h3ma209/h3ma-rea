@@ -27,7 +27,7 @@ export const inspectObjcSelectorRefs = async (
   const metadata = await inspectNativeDispatch(
     analysis,
     input.max_records,
-    signal,
+    signal === undefined ? {} : { signal },
   );
   if (!metadata.ok) return metadata;
   const parsed = nativeDispatchMetadataResultSchema.safeParse(metadata.value);

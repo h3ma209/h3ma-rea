@@ -48,9 +48,9 @@ export const detectCryptoPrimitives = async (
   for (const item of parsed.data) {
     if (signal?.aborted)
       return err(
-        new AnalysisCancelledError(
-          "detect_crypto_primitives operation cancelled",
-        ),
+        new AnalysisCancelledError("detect_crypto_primitives", {
+          cause: signal.reason,
+        }),
       );
 
     const val = item.value.toLowerCase();

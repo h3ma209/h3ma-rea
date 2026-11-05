@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { resolveFunctionCalls } from "./ResolveFunctionCalls.js";
 import { createAnalysisExecution } from "../AnalysisProvider.js";
-import { functionDossierSchema } from "../../domain/hopperValues.js";
+import { functionDossierSchema } from "../../domain/native/functionDossier.js";
 import { ghidraFunctionDossier } from "../../domain/ghidraValues.fixture.js";
 import { jsonValueSchema } from "../../domain/jsonValue.js";
 import { err, ok } from "../../domain/result.js";
@@ -125,7 +125,11 @@ describe("resolveFunctionCalls", () => {
               ),
             );
           return err(
-            new AnalysisCapabilityUnavailableError("fixture", operation, "unused"),
+            new AnalysisCapabilityUnavailableError(
+              "fixture",
+              operation,
+              "unused",
+            ),
           );
         },
       },

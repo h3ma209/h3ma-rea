@@ -2,8 +2,8 @@ import {
   inspectSignatureSchema,
   type InspectSignature,
 } from "../../domain/native/nativeInspection.js";
-import { jsonValueSchema, type JsonValue } from "../../domain/jsonValue.js";
 import { parseXmlPropertyList } from "../../domain/propertyListKeys.js";
+import { jsonValueSchema, type JsonValue } from "../../domain/jsonValue.js";
 
 /**
  * Parse bounded `codesign -d --verbose=4` diagnostics, which Apple emits on
@@ -117,10 +117,10 @@ export const parseEntitlements = (
   const start = output.indexOf("<?xml");
   const end = output.lastIndexOf("</plist>");
   if (start < 0 || end < start) return { value: null, omittedPrototypeKeys: 0 };
-  const { value, omittedPrototypeKeys } = parseXmlPropertyList(
+  const { value } = parseXmlPropertyList(
     output.slice(start, end + "</plist>".length),
   );
-  return { value: jsonValueSchema.parse(value), omittedPrototypeKeys };
+  return { value: jsonValueSchema.parse(value), omittedPrototypeKeys: 0 };
 };
 
 const parseRuntime = (value: string | undefined): boolean | null => {

@@ -113,12 +113,6 @@ import {
 } from "./errorSchemas.js";
 import { relationshipCoverageSchema } from "../domain/relationshipCoverage.js";
 import { nativeDispatchMetadataResultSchema } from "../domain/native/objcSwiftMetadata.js";
-import { nativeDispatchImplementationMapSchema } from "../domain/native/nativeDispatchImplementationMap.js";
-import { applyDemangledNamesSchema } from "../domain/native/demangledNames.js";
-import { applyObjcSignaturesSchema } from "../domain/native/objcSignatures.js";
-import { applyObjcIvarsSchema } from "../domain/native/objcIvarApply.js";
-import { functionCallResolutionSchema } from "../domain/native/functionCallResolution.js";
-import { nativeValueTraceInRegionSchema } from "../domain/native/nativeValueTraceRegion.js";
 import { nativeInvestigationTraceSchema } from "../domain/native/nativeInvestigationGraph.js";
 import {
   addressedEntry,
@@ -171,6 +165,7 @@ export const officialOutputSchemas = {
   resolve_native_call_targets: evidenceResultOf(nativeCallTargetsSchema),
   inspect_native_regions: evidenceResultOf(nativeControlRegionsSchema),
   evaluate_native_pcode: evidenceResultOf(nativePcodeEvaluationSchema),
+  search_native_memory: evidenceResultOf(nativeMemorySearchSchema),
   address_name: evidenceResultOf(nullableText),
   comment: evidenceResultOf(nullableText),
   current_address: evidenceResultOf(z.string()),
@@ -334,7 +329,9 @@ export const enhancedOutputSchemas = {
   apply_objc_signatures: evidenceResultOf(applyObjcSignaturesSchema),
   apply_objc_ivars: evidenceResultOf(applyObjcIvarsSchema),
   resolve_function_calls: evidenceResultOf(functionCallResolutionSchema),
-  trace_native_values_in_region: evidenceResultOf(nativeValueTraceInRegionSchema),
+  trace_native_values_in_region: evidenceResultOf(
+    nativeValueTraceInRegionSchema,
+  ),
   trace_native_values: evidenceResultOf(nativeValueTraceSchema),
   inspect_binary_protections: evidenceResultOf(z.any()),
   detect_crypto_primitives: evidenceResultOf(z.any()),

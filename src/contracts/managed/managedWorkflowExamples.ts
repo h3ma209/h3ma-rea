@@ -245,7 +245,6 @@ const nativeExportEvidence = () => {
     load_commands: coverage([]),
     dependencies: coverage([]),
     imports: coverage([]),
-    imports_by_source: coverage([]),
     exports: coverage([
       {
         name: "open_native",

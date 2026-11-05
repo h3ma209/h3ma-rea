@@ -67,7 +67,11 @@ export const auditUnsafeApis = async (
 
   for (const item of parsedNames.data) {
     if (signal?.aborted)
-      return err(new AnalysisCancelledError("audit_unsafe_apis cancelled"));
+      return err(
+        new AnalysisCancelledError("audit_unsafe_apis", {
+          cause: signal.reason,
+        }),
+      );
 
     const cleanName = item.name.replace(/^_+/u, "");
     const banned = BANNED_APIS[cleanName];

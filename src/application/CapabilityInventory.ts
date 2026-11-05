@@ -229,6 +229,33 @@ const ENHANCED_REQUIREMENTS: ReadonlyMap<string, ProviderComposition> = new Map(
     inspect_native_dispatch_metadata: [
       Object.values(NATIVE_DISPATCH_METADATA_SOURCES),
     ],
+    inspect_native_dispatch_implementations: [
+      Object.values(NATIVE_DISPATCH_METADATA_SOURCES),
+      "resolve_containing_procedure",
+    ],
+    apply_demangled_names: [
+      "list_names",
+      "demangle_swift",
+      "set_addresses_names",
+    ],
+    apply_objc_signatures: [
+      Object.values(NATIVE_DISPATCH_METADATA_SOURCES),
+      "resolve_containing_procedure",
+      "annotate_native_function",
+    ],
+    apply_objc_ivars: [
+      Object.values(NATIVE_DISPATCH_METADATA_SOURCES),
+      "annotate_native_function",
+    ],
+    resolve_function_calls: [
+      "analyze_function",
+      Object.values(NATIVE_DISPATCH_METADATA_SOURCES),
+    ],
+    trace_native_values_in_region: [
+      "inspect_native_regions",
+      "analyze_function",
+      "resolve_native_call_targets",
+    ],
     get_objc_classes: ["list_names"],
     get_objc_protocols: ["list_names"],
     batch_decompile: ["procedure_pseudo_code"],

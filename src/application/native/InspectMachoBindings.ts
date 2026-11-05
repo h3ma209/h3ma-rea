@@ -48,7 +48,9 @@ export const inspectMachoBindings = async (
   for (const item of parsed.data) {
     if (signal?.aborted)
       return err(
-        new AnalysisCancelledError("inspect_macho_bindings cancelled"),
+        new AnalysisCancelledError("inspect_macho_bindings", {
+          cause: signal.reason,
+        }),
       );
 
     if (item.name.startsWith("stub_") || item.name.includes("$stub")) {

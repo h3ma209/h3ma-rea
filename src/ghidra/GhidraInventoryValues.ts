@@ -11,6 +11,7 @@ import {
   validateBytePattern,
   byteSearchResultSchema,
 } from "../domain/native/bytePattern.js";
+import { nativeMemorySearchSchema } from "../domain/native/nativeMemorySearch.js";
 import {
   normalizeNativeLoadImageObservation,
   nativeLoadImageObservationSchema,
@@ -474,6 +475,7 @@ const resultSchemas = {
   resolve_containing_procedure: containingProcedure,
   search_procedures: z.array(procedureMatchItem),
   search_strings: z.array(addressedItem),
+  search_native_memory: nativeMemorySearchSchema,
 } satisfies Readonly<
   Record<Exclude<GhidraInventoryOperation, GhidraNamingOperation>, z.ZodType>
 >;

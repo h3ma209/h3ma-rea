@@ -28,7 +28,7 @@ export const applyObjcIvars = async (
   const metadata = await inspectNativeDispatch(
     analysis,
     input.max_records,
-    signal,
+    signal === undefined ? {} : { signal },
   );
   if (!metadata.ok) return metadata;
   const parsed = nativeDispatchMetadataResultSchema.safeParse(metadata.value);
@@ -57,7 +57,9 @@ export const applyObjcIvars = async (
     {
       max_records: input.max_records,
       resolve_procedures: true,
-      ...(input.class_name === undefined ? {} : { class_name: input.class_name }),
+      ...(input.class_name === undefined
+        ? {}
+        : { class_name: input.class_name }),
     },
     signal,
   );
@@ -74,7 +76,10 @@ export const applyObjcIvars = async (
         )
           procedureForClass.set(item.class_name, item.procedure.address);
       }
-    } else limitations.push("Implementation map could not be parsed for class anchors.");
+    } else
+      limitations.push(
+        "Implementation map could not be parsed for class anchors.",
+      );
   }
   const classes = [...byClass.keys()].slice(0, input.max_classes);
   const truncated = byClass.size > classes.length;
@@ -105,7 +110,8 @@ export const applyObjcIvars = async (
         fields: [],
         size_bytes: null,
         action: "invalid" as const,
-        reason: "No ivar had both a resolved offset and a supported type encoding.",
+        reason:
+          "No ivar had both a resolved offset and a supported type encoding.",
       };
     if (procedure === null)
       return {
@@ -147,7 +153,9 @@ export const applyObjcIvars = async (
     if (joined.success) limitations.push(...joined.data.limitations);
   }
   if (truncated)
-    limitations.push("Class budget max_classes was reached before every decoded class.");
+    limitations.push(
+      "Class budget max_classes was reached before every decoded class.",
+    );
   if (!input.apply || eligible.length === 0)
     return ok(
       jsonValueSchema.parse(
@@ -167,7 +175,11 @@ export const applyObjcIvars = async (
   const results: Record<string, boolean> = {};
   for (const item of eligible) {
     if (signal?.aborted)
-      return err(new AnalysisCancelledError("apply_objc_ivars"));
+      return err(
+        new AnalysisCancelledError("apply_objc_ivars", {
+          cause: signal.reason,
+        }),
+      );
     const applied = await analysis.execute(
       "annotate_native_function",
       {

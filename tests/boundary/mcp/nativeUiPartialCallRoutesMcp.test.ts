@@ -322,6 +322,8 @@ it.each([
           selector: "runAction:",
           method_type: "instance",
           implementation_address: "0x10000077c",
+          selector_address: null,
+          type_encoding: null,
           location: recordLocation,
           decode: { status: "decoded", reason: null },
           evidence: recordEvidence,

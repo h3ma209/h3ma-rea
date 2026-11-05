@@ -18,6 +18,7 @@ export const GHIDRA_INVENTORY_OPERATIONS = [
   "resolve_containing_procedure",
   "search_procedures",
   "search_strings",
+  "search_native_memory",
   "set_address_name",
   "set_addresses_names",
 ] as const;

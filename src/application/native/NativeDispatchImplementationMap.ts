@@ -41,7 +41,7 @@ export const inspectNativeDispatchImplementations = async (
   const metadata = await inspectNativeDispatch(
     analysis,
     input.max_records,
-    signal,
+    signal === undefined ? {} : { signal },
   );
   if (!metadata.ok) return metadata;
   const parsed = nativeDispatchMetadataResultSchema.safeParse(metadata.value);
@@ -55,7 +55,8 @@ export const inspectNativeDispatchImplementations = async (
     );
   const selected = parsed.data.result.objc_dispatch_implementations.filter(
     (item) =>
-      (input.class_name === undefined || item.class_name === input.class_name) &&
+      (input.class_name === undefined ||
+        item.class_name === input.class_name) &&
       (input.selector === undefined || item.selector === input.selector),
   );
   const items = [];
@@ -100,7 +101,9 @@ export const inspectNativeDispatchImplementations = async (
       });
       continue;
     }
-    const containing = containingProcedureSchema.safeParse(resolved.value.result);
+    const containing = containingProcedureSchema.safeParse(
+      resolved.value.result,
+    );
     if (!containing.success) {
       limitations.add(
         "Containing-procedure result did not match the provider contract.",

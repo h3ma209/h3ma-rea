@@ -25,13 +25,17 @@ export const applyObjcSignatures = async (
     {
       max_records: input.max_methods,
       resolve_procedures: true,
-      ...(input.class_name === undefined ? {} : { class_name: input.class_name }),
+      ...(input.class_name === undefined
+        ? {}
+        : { class_name: input.class_name }),
       ...(input.selector === undefined ? {} : { selector: input.selector }),
     },
     signal,
   );
   if (!metadata.ok) return metadata;
-  const parsed = nativeDispatchImplementationMapSchema.safeParse(metadata.value);
+  const parsed = nativeDispatchImplementationMapSchema.safeParse(
+    metadata.value,
+  );
   if (!parsed.success)
     return err(
       new AnalysisOutputError(
@@ -72,7 +76,10 @@ export const applyObjcSignatures = async (
         action: "invalid" as const,
         reason: "type encoding is absent",
       };
-    const signature = objcEncodingToSignature(item.type_encoding, item.selector);
+    const signature = objcEncodingToSignature(
+      item.type_encoding,
+      item.selector,
+    );
     if (signature === null)
       return {
         class_name: item.class_name,
@@ -123,7 +130,11 @@ export const applyObjcSignatures = async (
   const results: Record<string, boolean> = {};
   for (const item of eligible) {
     if (signal?.aborted)
-      return err(new AnalysisCancelledError("apply_objc_signatures"));
+      return err(
+        new AnalysisCancelledError("apply_objc_signatures", {
+          cause: signal.reason,
+        }),
+      );
     const procedure = item.procedure;
     const signature = item.signature;
     if (procedure === null || signature === null) continue;
