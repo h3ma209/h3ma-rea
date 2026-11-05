@@ -24,9 +24,15 @@
 
 [Quick start](#quick-start) · [How REA works](#how-rea-works) · [What you can analyze](#what-you-can-analyze) · [Showcases](#showcases) · [Build RL environments](#build-rl-environments) · [FAQ](#faq) · [Documentation](#documentation)
 
-<code>npx rea-agents setup</code>
+<code>npx h3ma-rea-agents setup</code>
 
 </div>
+
+> **This fork (`h3ma209/h3ma-rea`)** — register agents/IDEs with
+> `npx -y h3ma-rea-agents@latest setup` or
+> `npx -y github:h3ma209/h3ma-rea#main setup`.
+> Details: [docs/h3ma-agent-setup.md](docs/h3ma-agent-setup.md).
+> Upstream REA remains [`rea-agents`](https://www.npmjs.com/package/rea-agents) on npm.
 
 > [!IMPORTANT]
 > Get REA from [morluto/rea](https://github.com/morluto/rea),
@@ -80,7 +86,7 @@ checks. Recovery steps are in `docs/installation.md` under
 With Node.js and npm installed, run:
 
 ```bash
-npx rea-agents setup
+npx -y h3ma-rea-agents@latest setup
 ```
 
 Choose your agents, review the proposed changes, and approve them. Setup adds

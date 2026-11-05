@@ -1,16 +1,16 @@
 {
-  "name": "rea-agents",
-  "mcpName": "io.github.morluto/rea",
+  "name": "h3ma-rea-agents",
+  "mcpName": "io.github.h3ma209/h3ma-rea",
   "version": "6.8.0",
-  "description": "Reverse engineer anything from your terminal or agent with one CLI and MCP server.",
+  "description": "h3ma fork of REA — reverse engineer anything from your terminal or agent (CLI + MCP).",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/morluto/rea.git"
+    "url": "git+https://github.com/h3ma209/h3ma-rea.git"
   },
-  "homepage": "https://github.com/morluto/rea#readme",
+  "homepage": "https://github.com/h3ma209/h3ma-rea#readme",
   "bugs": {
-    "url": "https://github.com/morluto/rea/issues"
+    "url": "https://github.com/h3ma209/h3ma-rea/issues"
   },
   "keywords": [
     "reverse-engineering",
@@ -40,7 +40,9 @@
   },
   "bin": {
     "rea": "scripts/rea.mjs",
-    "rea-agents": "scripts/rea.mjs"
+    "rea-agents": "scripts/rea.mjs",
+    "h3ma-rea": "scripts/rea.mjs",
+    "h3ma-rea-agents": "scripts/rea.mjs"
   },
   "engines": {
     "node": "^22.23.4 || ^24.22.1 || >=26.12.1"
